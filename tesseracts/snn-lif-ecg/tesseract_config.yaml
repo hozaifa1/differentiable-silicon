@@ -1,0 +1,12 @@
+name: "snn-lif-ecg"
+version: "0.1.0"
+description: |
+  Surrogate-gradient LIF classifier parameterised by five device numbers, with a
+  class-balanced cross-entropy objective. vector_jacobian_product is
+  torch.autograd.grad(L, phi) -- the PyTorch end of a gradient path that crosses
+  into JAX with no shared autodiff state. MIT-BIH inter-patient DS1/DS2 lands on D4.
+
+build_config:
+  package_data:
+    - ["../../src/diffsilicon", "diffsilicon"]
+    - ["../../config", "config"]

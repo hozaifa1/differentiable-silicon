@@ -1,0 +1,12 @@
+name: "sentaurus-fefet"
+version: "0.1.0"
+description: |
+  Synopsys Sentaurus 2023.12 (sde + sdevice, Preisach ferroelectric) behind the
+  frozen contract. Closed-source, license-metered, csh-driven, on a CentOS 7 host
+  with Python 2.7.5 and nothing else installed on it. No AD path, by nature.
+  Runs uncontainerised against a remote license -- see docs/T1_CONTAINER.md.
+
+build_config:
+  package_data:
+    - ["../../src/diffsilicon", "diffsilicon"]
+    - ["../../config", "config"]

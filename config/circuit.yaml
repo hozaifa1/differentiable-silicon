@@ -1,0 +1,70 @@
+# Every named constant of the DPI neuron, in one place, all of them repeated in
+# the writeup. Nothing in the code may hard-code a value that belongs here.
+#
+# Provenance column matters: three of these are design choices, two are ASSUMED
+# literature coefficients, and one is FROZEN by a computation done once on D1.
+
+C_mem: 100.0e-15        # F   -- MIM integration capacitor, ~50-100 um^2. Design choice.
+V_spk: 0.30             # V   -- comparator threshold. Design choice.
+V_read: 0.60            # V   -- read bias, on-region. Design choice.
+V_ds: 0.05              # V   -- linear region, so g is a conductance. Design choice.
+
+# FROZEN 2026-08-23. The value of V_leak at which the NOMINAL d=5 device
+# (t_fe = 10 nm, Pr = 15 uC/cm2, Ec = 1.2 MV/cm, L_g = 40 nm, N_ch = 1e17 cm^-3)
+# draws Id = 170 pA on its forward (erased) branch, with I_crit = 250 nA and
+# SS = 85.200214 mV/dec:
+#
+#     V_leak = V_th,fwd + SS * log10(170 pA / I_crit)
+#            = 0.516262168 + 0.085200214 * log10(6.8e-4)
+#
+# Computed once, never changed. Every subsequent device is evaluated at THIS
+# bias, which is what makes I_leak a device-dependent quantity rather than a
+# free parameter: a 60 mV threshold shift moves it about 5x.
+V_leak: 0.246391250     # V   -- FROZEN
+
+A_accel: 512.0          # x   -- acceleration factor (BrainScaleS runs 1e3-1e4x)
+dt_bio: 5.625e-3        # s   -- 0.72 s beat window / 128 timesteps
+dt_hw: 11.0e-6          # s   -- dt_bio / A_accel, rounded to 11.0 us
+
+# FROZEN 2026-08-23, same day and same nominal device as V_leak.
+#
+# The DPI integrator needs C_mem*V_spk/(th_th*dt_hw) of synaptic current to fire
+# in th_th steps: at th_th = 5 that is 10.91 nA, i.e. a synapse conductance of
+# 1.0909e-8 S. A real 40 nm FeFET read at V_read = 0.60 V and V_ds = 50 mV delivers
+# ~2.0e-4 S. Those differ by 1.8e4, which is not a modelling error -- it is why
+# analog neuromorphic synapse arrays attenuate the read current into the
+# integrator instead of driving it directly. K_syn is that fixed attenuation
+# (a cascaded current mirror), and it is the ONLY constant standing between the
+# read conductance and the membrane.
+#
+#     K_syn = C_mem*V_spk / (th_th * V_ds * dt_hw * g_max_nominal)
+#           = 1.09091e-8 / 2.0014e-4
+#
+# It multiplies g_min, g_max and dg/dV_th identically, so sigma_w is invariant to
+# it and beta does not involve it at all: K_syn sets the firing threshold and
+# nothing else. Without it th_th comes out at 2.7e-4 and every neuron fires on
+# its first input spike.
+#
+# th_th = 5, not the 20 first drafted. th_th is spikes-to-fire at MAX weight, and
+# the membrane is measured in the same units, so with beta = 0.60 a neuron
+# integrates over 1/(1-beta) = 2.5 steps and can reach at most ~2.5 * fan-in *
+# input-rate * mean-weight. At th_th = 20 no neuron in the network ever fired: the
+# loss sat at exactly ln(4), every logit was identically zero, and the whole
+# device-to-classifier channel was dead while still returning a plausible-looking
+# surrogate gradient. Five is a handful of events, which is what an integrating
+# neuron is for.
+K_syn: 5.450675e-05     # -- FROZEN. Dimensionless synapse current-mirror ratio.
+th_th_nominal: 5.0      # spikes-to-fire at max weight on the nominal device
+
+I_crit_per_WL: 100.0e-9 # A   -- constant-current V_th criterion, times W/L_g
+W_dev_nm: 100.0         # nm  -- device width for D <= 5; free at D = 12
+U_T: 0.025852           # V   -- thermal voltage at 300 K
+
+# --- ASSUMED, not measured. Stated as such here and in the writeup. ---
+A_Vth: 4.0e-3           # V*um  -- Pelgrom coefficient (Pelgrom et al., JSSC 1989)
+A_dom: 1.0e-4           # um^2  -- ferroelectric domain area (100 nm^2)
+
+# Sanity check at nominal, reproduced by tests/test_circuit.py:
+#   x     = dt_hw * ln10 * I_tau / (C_mem * SS) = 0.5054
+#   beta  = 0.6033,  tau = 21.8 us ~= 2 * dt_hw          HEALTHY
+#   sigma_Vth at W=100nm, L_g=40nm, MW=0.5V: 63 mV (Pelgrom) + 40 mV (domain) = 74 mV

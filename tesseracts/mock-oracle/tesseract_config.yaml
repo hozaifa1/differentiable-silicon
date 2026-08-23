@@ -1,0 +1,12 @@
+name: "mock-oracle"
+version: "0.1.0"
+description: |
+  Analytic mock FeFET publishing the frozen OracleInput/OracleOutput contract.
+  Tier A of the reproduction story: the complete pipeline, every schema and every
+  gradient hop, in two minutes with no Docker, no license and no network.
+  No gradients -- deliberately, exactly like the two real oracles.
+
+build_config:
+  package_data:
+    - ["../../src/diffsilicon", "diffsilicon"]
+    - ["../../config", "config"]

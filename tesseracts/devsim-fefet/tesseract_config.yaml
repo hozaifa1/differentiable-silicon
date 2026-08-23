@@ -1,0 +1,12 @@
+name: "devsim-fefet"
+version: "0.1.0"
+description: |
+  DEVSIM 2.10 (Apache-2.0 C++ FVM drift-diffusion) with a clean-room Miller
+  ferroelectric gate. The reproducible twin of the commercial solver: byte-identical
+  frozen schema, so swapping between them is one environment variable.
+  No gradients -- adjoint-shim supplies those.
+
+build_config:
+  package_data:
+    - ["../../src/diffsilicon", "diffsilicon"]
+    - ["../../config", "config"]

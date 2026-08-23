@@ -1,0 +1,4 @@
+numpy>=1.26
+jax[cpu]>=0.4.35
+pyyaml>=6.0
+tesseract-core>=1.11.0

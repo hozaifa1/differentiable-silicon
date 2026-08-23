@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Sentaurus scratch (never commit vendor binaries or Synopsys-shipped decks)
+t1_scratch/
+*.tdr
+*.plt.gz
+_remote_tmp/
+
+# Figures / run artefacts are regenerated; the replay cache is NOT ignored.
+results/runs/
+results/figures/
+!results/cache/
+!results/cache/**
+
+# The mock cache is regenerated in seconds and is keyed on the mock's own source,
+# so committing it buys nothing. Tier C is about results/cache/sentaurus/.
+results/cache/mock/

@@ -1,0 +1,13 @@
+name: "adjoint-shim"
+version: "0.1.0"
+description: |
+  Retrofits a validated vector-Jacobian product onto a black-box solver with no
+  AD path: trust-region finite differences with Broyden rank-1 updates between
+  ground-truth refreshes. apply() proxies to the oracle, so the forward pass is
+  never a surrogate; only the derivative is manufactured. Which solver sits
+  underneath is set by ORACLE_BACKEND / ORACLE_URL and nothing else.
+
+build_config:
+  package_data:
+    - ["../../src/diffsilicon", "diffsilicon"]
+    - ["../../config", "config"]
