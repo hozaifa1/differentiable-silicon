@@ -7,6 +7,11 @@ description: |
   No gradients -- adjoint-shim supplies those.
 
 build_config:
+  # The devsim wheel ships no BLAS. Debian puts the unversioned libopenblas.so
+  # symlink -- which is the bare name devsim searches for -- only in the -dev
+  # package, so that is what goes in, on both stages of the build.
+  extra_packages:
+    - libopenblas-dev
   package_data:
     - ["../../src/diffsilicon", "diffsilicon"]
     - ["../../config", "config"]

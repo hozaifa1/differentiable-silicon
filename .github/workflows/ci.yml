@@ -25,6 +25,12 @@ jobs:
         with:
           enable-cache: true
 
+      # The devsim wheel ships no BLAS on Linux either; a bare ubuntu-latest has
+      # none of libopenblas/liblapack/libblas and `import devsim` dies with
+      # RuntimeError. Debian ships the unversioned symlink only in the -dev package.
+      - name: Install BLAS for DEVSIM
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libopenblas-dev
+
       - name: Sync the environment
         run: uv sync --extra snn --extra devsim --group dev --frozen
 

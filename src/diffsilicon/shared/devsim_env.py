@@ -1,10 +1,20 @@
 """Make `import devsim` work without the caller knowing anything about BLAS.
 
-The Windows devsim wheel ships no math library and looks for
-libopenblas/liblapack/libblas or an Intel MKL whose highest *tested* name is
-`mkl_rt.2.dll`. Current MKL wheels install `mkl_rt.3.dll` inside
-`<prefix>/Library/bin`, which devsim will happily load once it is told the name
-and the directory is on the DLL search path. Linux wheels are self-contained.
+The devsim wheel ships NO math library on either platform. It looks for
+libopenblas / liblapack / libblas by bare name, or for an Intel MKL whose highest
+*tested* name is `mkl_rt.2.dll`.
+
+* **Windows:** current MKL wheels install `mkl_rt.3.dll` inside
+  `<prefix>/Library/bin`, which devsim loads happily once it is told the name and
+  the directory is on the DLL search path.
+* **Linux:** a bare `ubuntu-latest` has none of the three, and `import devsim`
+  fails with `RuntimeError: Issues initializing DEVSIM`. Debian ships the
+  unversioned `libopenblas.so` symlink only in `libopenblas-dev`, so either that
+  package is installed (what CI and the T2 image do) or this module finds a
+  versioned `libopenblas.so.N` and passes its full path.
+
+Note the failure mode: a RuntimeError, not an ImportError, so
+`pytest.importorskip` does NOT skip on it -- it errors out during collection.
 
 Import this module (or call `ensure_math_libs()`) before `import devsim`.
 """
@@ -28,6 +38,39 @@ def _candidate_dll_dirs() -> list[Path]:
     return [d for d in dirs if d.is_dir()]
 
 
+def _ensure_linux_blas() -> str | None:
+    """Find a BLAS/LAPACK devsim can load, preferring the bare names it expects."""
+    import ctypes.util
+    from glob import glob
+
+    for bare in ("libopenblas.so", "liblapack.so", "libblas.so"):
+        if ctypes.util.find_library(bare[3:-3]) and _loadable(bare):
+            return None  # the default search string already works
+
+    patterns = [
+        "/usr/lib/x86_64-linux-gnu/libopenblas.so.*",
+        "/usr/lib64/libopenblas.so.*",
+        "/usr/lib/x86_64-linux-gnu/liblapack.so.*",
+        "/usr/lib64/liblapack.so.*",
+        str(Path(sys.prefix) / "lib" / "libmkl_rt.so*"),
+    ]
+    found = [m for pat in patterns for m in sorted(glob(pat))]
+    if not found:
+        return None
+    os.environ["DEVSIM_MATH_LIBS"] = ":".join(found[:3])
+    return os.environ["DEVSIM_MATH_LIBS"]
+
+
+def _loadable(name: str) -> bool:
+    import ctypes
+
+    try:
+        ctypes.CDLL(name)
+        return True
+    except OSError:
+        return False
+
+
 def ensure_math_libs() -> str | None:
     """Set DEVSIM_MATH_LIBS if unset. Returns the value in effect, or None."""
     global _done
@@ -39,7 +82,7 @@ def ensure_math_libs() -> str | None:
         return os.environ["DEVSIM_MATH_LIBS"]
 
     if sys.platform != "win32":
-        return None  # manylinux wheels bundle their own OpenBLAS
+        return _ensure_linux_blas()
 
     for d in _candidate_dll_dirs():
         matches = sorted(d.glob("mkl_rt*.dll"), reverse=True)

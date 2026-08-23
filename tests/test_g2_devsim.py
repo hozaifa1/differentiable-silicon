@@ -27,7 +27,16 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("devsim", reason="devsim not installed")
+# NOT pytest.importorskip: a devsim without a BLAS raises RuntimeError, not
+# ImportError, so importorskip does not skip on it -- it errors out during
+# collection and takes the whole run with it.
+try:
+    from diffsilicon.shared.devsim_env import import_devsim
+
+    import_devsim()
+except Exception as exc:  # noqa: BLE001 -- devsim signals a missing BLAS as RuntimeError
+    pytest.skip(f"devsim unavailable: {exc}", allow_module_level=True)
+
 pytestmark = pytest.mark.needs_devsim
 
 SCRIPT = Path(__file__).resolve().parent / "g2_devsim_diode.py"
