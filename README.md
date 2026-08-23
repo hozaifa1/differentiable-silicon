@@ -4,6 +4,9 @@
 subthreshold neuron circuit, and into a closed-source commercial TCAD solver — to obtain
 ∂L/∂(ferroelectric process parameters).**
 
+[![CI](https://github.com/hozaifa1/differentiable-silicon/actions/workflows/ci.yml/badge.svg)](https://github.com/hozaifa1/differentiable-silicon/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Tesseract Hackathon 2026 (Pasteur Labs & ISI) · Track 3 — Hybrid ML + Mechanistic Models
 
 ---
@@ -42,9 +45,31 @@ uv sync --group dev && uv run pytest
 docker pull ghcr.io/hozaifa1/devsim-fefet:latest
 ```
 
-Then `tesseract serve devsim-fefet --port 8101` and point the orchestrator at it. **Swapping the
-closed-source commercial solver for the open one is one environment variable — `ORACLE_URL`.**
-Nothing else in the pipeline changes. That line is the whole reason this is built on Tesseract.
+Then serve it and point the orchestrator at it:
+
+```bash
+tesseract serve devsim-fefet --port 8101
+```
+
+```bash
+ORACLE_BACKEND=url ORACLE_URL=http://localhost:8101 uv run pytest tests/test_tier_a_pipeline.py
+```
+
+**Swapping the closed-source commercial solver for the open one is one environment variable.**
+Nothing else in the pipeline changes — not the shim, not the transducer, not the network, not the
+optimiser — because `sentaurus-fefet` and `devsim-fefet` publish a byte-identical frozen schema, and
+[a test asserts that they still do](tests/test_tier_a_pipeline.py). That line is the whole reason
+this is built on Tesseract.
+
+All five images are on GHCR and public. Pin by digest, not by tag — `latest` is a moving target:
+
+| Tesseract | Image |
+|---|---|
+| T1 | `ghcr.io/hozaifa1/sentaurus-fefet` |
+| T2 | `ghcr.io/hozaifa1/devsim-fefet` |
+| T3 | `ghcr.io/hozaifa1/adjoint-shim` |
+| T4 | `ghcr.io/hozaifa1/snn-lif-ecg` |
+| mock | `ghcr.io/hozaifa1/mock-oracle` |
 
 **Tier C — regenerates every Sentaurus figure with no license and no network.** `results/cache/`
 is a content-addressed replay of every Sentaurus call ever made, populated as a side effect of every
@@ -58,6 +83,27 @@ ORACLE_BACKEND=replay uv run python -m diffsilicon.race
 `.env.example`. `t1/Dockerfile` expects the Sentaurus tree bind-mounted at `/opt/synopsys` and takes
 `SNPSLMD_LICENSE_FILE` for license-server passthrough; the flagship itself runs uncontainerised, and
 that document explains why.
+
+## Documents
+
+- [`docs/D1_FINDINGS.md`](docs/D1_FINDINGS.md) — every gate result, every measured
+  number, and the eleven places where a measurement overruled the plan.
+- [`docs/T1_CONTAINER.md`](docs/T1_CONTAINER.md) — why the flagship Tesseract runs
+  uncontainerised, and what the driver has to survive on a csh-only CentOS 7 host.
+- [`docs/UPSTREAM.md`](docs/UPSTREAM.md) — two bugs found by using the toolkit rather
+  than reading it, with the motivating case in this repository.
+
+## Status
+
+| | |
+|---|---|
+| Contract | **frozen** — `OracleInput` / `OracleOutput`, seven smooth FoMs |
+| Extraction | all seven within **0.5 %** of a closed-form reference across the design box |
+| Smoothness (G4) | ~5e-7 against a 0.15 threshold; the metric halves exactly under grid refinement |
+| V3 `check-gradients` | **0 failures / 56 checks** on the shim, **0 / 10** on the network |
+| Open oracle (G2) | DEVSIM converges a pn diode, 5.9 decades of rectification |
+| Containers (G3) | all five build and push to GHCR from CI |
+| Tests | 94, lint clean |
 
 ## License
 
