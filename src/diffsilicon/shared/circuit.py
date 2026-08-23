@@ -41,8 +41,11 @@ def _find_config() -> Path:
     if env:
         return Path(env)
     here = Path(__file__).resolve()
-    for up in range(1, 5):
-        cand = here.parents[up] / "config" / "circuit.yaml"
+    # Bounded by however many parents actually exist: inside a Tesseract container
+    # this file is only three levels from the filesystem root, and a fixed range
+    # walks off the end.
+    for parent in here.parents:
+        cand = parent / "config" / "circuit.yaml"
         if cand.is_file():
             return cand
     raise FileNotFoundError(

@@ -13,9 +13,18 @@ stamped backend="mock", and no reported result in this project comes from it.
 import sys
 from pathlib import Path
 
-for _cand in (Path(__file__).resolve().parent, Path(__file__).resolve().parents[2] / "src"):
+# Locally the package lives at <repo>/src/diffsilicon; inside a built Tesseract,
+# build_config.package_data drops the same tree beside this file at
+# /tesseract/diffsilicon. Note the `parents` slice has to be bounded: in the
+# container this file sits two levels from the filesystem root, and indexing past
+# it raises IndexError -- which surfaces only as "Could not load module from
+# /tesseract/tesseract_api.py" during `tesseract build`.
+_HERE = Path(__file__).resolve()
+_CANDIDATES = [_HERE.parent, *(p / "src" for p in _HERE.parents)]
+for _cand in _CANDIDATES:
     if (_cand / "diffsilicon").is_dir() and str(_cand) not in sys.path:
         sys.path.insert(0, str(_cand))
+        break
 
 from tesseract_core.runtime import ShapeDType  # noqa: E402
 
