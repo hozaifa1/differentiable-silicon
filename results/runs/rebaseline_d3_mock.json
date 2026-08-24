@@ -1,0 +1,163 @@
+{
+ "generated": "2026-08-24T23:48:53",
+ "backend": "mock",
+ "design": {
+  "d": 4,
+  "label": "d4-fabrication",
+  "names": [
+   "t_fe",
+   "L_g",
+   "log10_N_ch",
+   "t_IL"
+  ],
+  "lo": [
+   5.0,
+   20.0,
+   16.0,
+   0.5
+  ],
+  "hi": [
+   15.0,
+   60.0,
+   18.0,
+   2.0
+  ]
+ },
+ "locked_material": {
+  "node": "cal_n16",
+  "source": "Simulations/Calibration/HYSTERESIS_CALIBRATION_RESULT.md",
+  "reference": "Liao et al. 2022, Fig. 7 quasi-static Id-Vg hysteresis, +-3.5 V, V_DS = 0.2 V",
+  "Pr_uC_cm2": 32.0,
+  "Ps_uC_cm2": 40.0,
+  "Ec_MV_cm": 1.4,
+  "MW_V": 1.296,
+  "i_ref_criterion_A_per_sheet": 1e-08,
+  "SS_mV_per_dec": [
+   45.0,
+   75.0
+  ]
+ },
+ "sweep": {
+  "n": 96,
+  "v_min": -3.5,
+  "v_max": 1.5
+ },
+ "circuit": {
+  "v_read": 0.6,
+  "v_leak": 0.24639125,
+  "k_syn": 5.450675e-05
+ },
+ "points": [
+  {
+   "ss_mV_per_dec": 83.05728436195541,
+   "vth_fwd_V": 0.5248360706618344,
+   "vth_rev_V": 0.10556686843058405,
+   "memory_window_V": 0.4192692022312503,
+   "i_leak_A": 1.1103961418520802e-10,
+   "g_lo_S": 2.2982478368837006e-05,
+   "g_hi_S": 0.0002065661465792668,
+   "g_ratio": 8.98798394429729,
+   "dg_dvth_S_per_V": 0.0005682973668893526,
+   "beta": 0.712755474980378,
+   "th_th": 4.844501888480391,
+   "sig_w": 0.22103951037012942,
+   "id_min_A": 8.697071161154772e-56,
+   "id_max_A": 0.0002844679139513287,
+   "converged": 1.0,
+   "solver_seconds": 3.0795384000521153,
+   "wall_seconds": 7.586514599970542,
+   "name": "nominal",
+   "theta": [
+    0.2,
+    0.5,
+    0.5,
+    0.3333333333333333
+   ],
+   "phys": {
+    "t_fe": 7.0,
+    "L_g": 40.0,
+    "log10_N_ch": 17.0,
+    "t_IL": 1.0
+   }
+  },
+  {
+   "ss_mV_per_dec": 88.69439807996304,
+   "vth_fwd_V": 0.14973915493648782,
+   "vth_rev_V": -0.1497388431857547,
+   "memory_window_V": 0.2994779981222425,
+   "i_leak_A": 2.9360740710670793e-06,
+   "g_lo_S": 0.0003510626737952317,
+   "g_hi_S": 0.001058235670200598,
+   "g_ratio": 3.014378198514625,
+   "dg_dvth_S_per_V": 0.0025963607248925334,
+   "beta": 0.0,
+   "th_th": 0.945640102085844,
+   "sig_w": 0.3506409986199429,
+   "id_min_A": 3.542909920528606e-48,
+   "id_max_A": 0.0014573115809971894,
+   "converged": 1.0,
+   "solver_seconds": 0.0061814000364393,
+   "wall_seconds": 0.07306149997748435,
+   "name": "t_fe_min",
+   "theta": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "phys": {
+    "t_fe": 5.0,
+    "L_g": 20.0,
+    "log10_N_ch": 16.0,
+    "t_IL": 0.5
+   }
+  },
+  {
+   "ss_mV_per_dec": 90.25998493798669,
+   "vth_fwd_V": 0.7644185033287344,
+   "vth_rev_V": -0.13401547192854812,
+   "memory_window_V": 0.8984339752572825,
+   "i_leak_A": 4.556811252016552e-13,
+   "g_lo_S": 7.528283359080858e-08,
+   "g_hi_S": 0.0004993385650354367,
+   "g_ratio": 6632.834355698347,
+   "dg_dvth_S_per_V": 0.0009207749133130101,
+   "beta": 0.9987221010389246,
+   "th_th": 2.0040713000574217,
+   "sig_w": 0.17539841998568098,
+   "id_min_A": 1.4189972581996212e-54,
+   "id_max_A": 0.0006876463576895032,
+   "converged": 1.0,
+   "solver_seconds": 0.005718000000342727,
+   "wall_seconds": 0.07898630003910512,
+   "name": "t_fe_max",
+   "theta": [
+    1.0,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "phys": {
+    "t_fe": 15.0,
+    "L_g": 40.0,
+    "log10_N_ch": 17.0,
+    "t_IL": 1.25
+   }
+  }
+ ],
+ "gates": {
+  "G5_memory_window_gt_0p1V": {
+   "value": 0.4192692022312503,
+   "pass": true
+  },
+  "SS_within_calibration_45_75_mV_per_dec": {
+   "value": 83.05728436195541,
+   "pass": true,
+   "note": "calibration reports 45-75 mV/dec; 120 is the gate because this is a different geometry on the same film"
+  },
+  "sign_convention_MW_positive": {
+   "pass": true,
+   "note": "forward = erased = high V_th, so MW > 0 on every point"
+  }
+ }
+}

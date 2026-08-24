@@ -49,6 +49,10 @@ results/figures/
 results/runs/*
 !results/runs/provenance.jsonl
 !results/runs/cross_check*.json
+# The D3 measurements the docs quote by name. Without these the writeup cites
+# files that are not in the repository.
+!results/runs/rebaseline_d3_*.json
+!results/runs/snn_calibration_d3.json
 !results/runs/*/
 results/runs/*/*
 !results/runs/*/steps.jsonl
