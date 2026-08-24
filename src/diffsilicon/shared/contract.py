@@ -7,7 +7,11 @@ commercial solver for the Apache-2.0 one is one environment variable" true
 rather than aspirational: T1 and T2 are byte-identical in schema, so nothing
 downstream can tell them apart except the `backend` provenance string.
 
-FROZEN 2026-08-23. Fields may not be renamed, reordered, retyped, or removed.
+FROZEN 2026-08-23, with ONE amendment on D2: the sweep window widened from
+[-1.20, 1.40] to [-3.50, 1.50] because the real device's memory window does not
+fit in 2.6 V. Fields may not be renamed, reordered, retyped, or removed. Note the
+grid is part of the cache key by construction -- it is inside the hashed inputs --
+so every cached result from the old window stops matching automatically.
 
 The Jacobian this contract implies is 7 x D, not 192 x D. No efficiency claim is
 made about output dimensionality -- a scalar loss over D design variables needs
@@ -36,11 +40,22 @@ __all__ = [
 
 # --- Fixed sweep grid ----------------------------------------------------------
 NVG = 96
-# The grid must still hold the whole soft subthreshold window at the WORST corner
-# of the design box: minimum V_th_center (L_g = 20 nm, N_ch = 1e16) combined with
-# the maximum memory window puts the reverse-branch 1e-10 A point near -0.98 V.
-VG_MIN = -1.20
-VG_MAX = 1.40
+# WIDENED 2026-08-24 (D2), from [-1.20, 1.40].
+#
+# The old window was sized against the ANALYTIC MOCK, whose memory window maxes
+# out near 1.2 V. The real device does not behave like that. Measured on
+# Sentaurus with the user's own calibrated deck at the nominal design point: the
+# programmed state draws 9.8e-06 A at -1.2 V and never switches off anywhere in
+# the old window, while the erased state sits at 1.3e-11 A until +0.77 V. Three
+# million to one, and only ONE of the two thresholds visible. At Pr = 15 uC/cm2
+# the film puts ~9e13 cm^-2 into the channel, about a hundred times what it takes
+# to inver it, so the window is volts wide and 2.6 V could never contain it.
+#
+# [-3.5, 1.5] is the range the user's own read sweep already covers, so it costs
+# nothing on the Sentaurus side. V_read = 0.60 and V_leak = 0.246391250 both stay
+# inside it, so the frozen circuit constants are untouched.
+VG_MIN = -3.50
+VG_MAX = 1.50
 DEFAULT_VG_GRID = np.linspace(VG_MIN, VG_MAX, NVG, dtype=np.float64)
 
 # Order is load-bearing: it fixes the row order of the 7 x D Jacobian everywhere.

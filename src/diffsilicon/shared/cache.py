@@ -58,6 +58,30 @@ def content_hash(inputs) -> str:
     return hashlib.sha256(_canonical(inputs).encode("utf-8")).hexdigest()
 
 
+def _extraction_source_hash() -> str:
+    """sha256 over `shared.extract`'s own source.
+
+    ADDED 2026-08-24 (D3), and it is the same argument `_mock_source_hash` makes,
+    applied where it bites harder. A cache record stores the seven EXTRACTED
+    figures of merit, not just the raw Id-Vg curve, and the extraction is Python
+    in this repository. So an edit to `extract.py` changes what every stored
+    record means, on EVERY backend -- including the commercial solver, whose
+    curves are expensive enough that nobody would think to recompute them.
+
+    That is not hypothetical. The D3 rewrite of the subthreshold window changed
+    SS on a real solver curve from 9618 mV/dec to 68, and without this line the
+    old value would have been replayed for the same theta indefinitely, with the
+    provenance log cheerfully recording that a real solver had produced it.
+
+    The cost is that fixing the extraction re-runs the solver. That cost is the
+    point: the alternative is numbers that are stale in exactly the way that is
+    hardest to notice.
+    """
+    from . import extract
+
+    return hashlib.sha256(Path(extract.__file__).read_bytes()).hexdigest()[:16]
+
+
 def _mock_source_hash() -> str:
     """sha256 over the analytic mock's own source.
 
@@ -73,13 +97,45 @@ def _mock_source_hash() -> str:
     return hashlib.sha256(src).hexdigest()[:16]
 
 
+def _design_box_hash(inputs) -> str:
+    """sha256 over the design vector's names and bounds.
+
+    theta travels NORMALISED to [0, 1]. That is what makes a single step size
+    sensible in every coordinate at once, and it is also a trap: move a bound and
+    the same normalised theta silently means a different physical device. Every
+    cache entry and every provenance line written before the move then describes
+    a device nobody asked about, and inside a Jacobian that shows up as a few
+    columns computed on the old box and the rest on the new one.
+
+    Folding the box into the key means stale entries simply stop matching. The
+    cost is recomputation; the alternative is wrong numbers that look right.
+    Pr moved 25 -> 40 on D2, which is exactly the case this defends against.
+    """
+    import numpy as np
+
+    from .design import get_design
+
+    d = int(np.asarray(inputs.theta).shape[-1])
+    spec = get_design(d)
+    blob = ";".join(
+        f"{n}:{lo!r}:{hi!r}"
+        for n, lo, hi in zip(spec.names, spec.lo, spec.hi, strict=True)
+    )
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
 def cache_key(inputs, backend: str) -> str:
-    """The cache filename. Equals content_hash() except for the mock, which is
-    additionally keyed on its own source so that editing it invalidates entries."""
-    h = content_hash(inputs)
+    """The cache filename.
+
+    Keyed on the inputs, on the DESIGN BOX those inputs are normalised against,
+    on the EXTRACTION that turned the curve into the seven stored figures of
+    merit, and -- for the mock only -- on the mock's own source, since that one
+    is the solver as well as the extraction.
+    """
+    h = f"{content_hash(inputs)}:{_design_box_hash(inputs)}:{_extraction_source_hash()}"
     if backend == "mock":
-        return hashlib.sha256(f"{h}:{_mock_source_hash()}".encode()).hexdigest()
-    return h
+        h = f"{h}:{_mock_source_hash()}"
+    return hashlib.sha256(h.encode()).hexdigest()
 
 
 class CacheStore:

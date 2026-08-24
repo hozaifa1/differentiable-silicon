@@ -1,3 +1,21 @@
+# THESIS WORK -- NOT FOR PUBLICATION.
+# t1/sdevice_fefet_idvg.cmd and .par are adopted verbatim from the user's own
+# GAA-FeFET thesis calibration (autocal/cal_template.cmd, par_template.par).
+# They encode his pulsed-write / sub-coercive-read protocol and his fitted
+# material parameters -- the results of his calibration work, and unpublished.
+# The repository is PUBLIC. These files must never be committed.
+t1/sdevice_fefet_idvg.cmd
+t1/sdevice_fefet_idvg.par
+t1/*.par
+t1/*.cmd
+t1/calibration.local.json
+
+# Credentials. The repo is PUBLIC and .env holds the Sentaurus password, so this
+# rule is load-bearing, not hygiene. .env.example is the committed template.
+.env
+.env.*
+!.env.example
+
 __pycache__/
 *.py[cod]
 .venv/
@@ -13,12 +31,35 @@ t1_scratch/
 *.plt.gz
 _remote_tmp/
 
-# Figures / run artefacts are regenerated; the replay cache is NOT ignored.
-results/runs/
+# Figures are regenerated; the replay cache is NOT ignored.
 results/figures/
 !results/cache/
 !results/cache/**
 
+# results/runs/ is ignored EXCEPT for the evidence. G10 asks to show the
+# per-iteration backend+hash log and D6 attaches it to the writeup, so an ignored
+# provenance.jsonl is an ignored answer to the one question the project exists to
+# answer. Same for the per-run step logs: the trust-region ratios in them ARE V5.
+# These are small append-only text files; the bulk (plots, .tdr, .plt) is what
+# the exclusion is for.
+#
+# Note the shape. Excluding the DIRECTORY (`results/runs/`) makes the "!" lines
+# below dead letters -- git does not descend into an excluded directory, so a
+# file inside one cannot be re-included. Exclude the contents instead.
+results/runs/*
+!results/runs/provenance.jsonl
+!results/runs/cross_check*.json
+!results/runs/*/
+results/runs/*/*
+!results/runs/*/steps.jsonl
+!results/runs/*/result.json
+
 # The mock cache is regenerated in seconds and is keyed on the mock's own source,
 # so committing it buys nothing. Tier C is about results/cache/sentaurus/.
 results/cache/mock/
+
+# The MIT-BIH .npz is a rebuild of the thesis' own preprocessing of a public
+# database. It is 16 MB, it is not this project's to publish, and it is
+# regenerated from DIFFSILICON_ECG_DIR in about eight seconds. See
+# src/diffsilicon/snn/ecg.py.
+results/cache/ecg/

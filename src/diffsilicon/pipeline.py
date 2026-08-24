@@ -84,11 +84,26 @@ def composed_loss(
     lambda_r: float = 0.0,
     seed: int = 0,
     batch: int = 32,
+    smooth_spikes: bool = False,
 ):
-    """J(theta), with every forward value coming from the configured oracle."""
+    """J(theta), with every forward value coming from the configured oracle.
+
+    `smooth_spikes` swaps the Heaviside for the soft-Heaviside it is the
+    relaxation of. It changes the OBJECTIVE, not the oracle: every device number
+    still comes from the solver. Reported figures of merit are always taken from
+    the hard-spike network; see `diffsilicon.optimise`.
+    """
     y = oracle_call(shim, theta)
     phi = transduce_jax(y, theta, cfg)
-    out = apply_tesseract(snn, {**{k: phi[k] for k in PHI_KEYS}, "seed": seed, "batch": batch})
+    out = apply_tesseract(
+        snn,
+        {
+            **{k: phi[k] for k in PHI_KEYS},
+            "seed": seed,
+            "batch": batch,
+            "smooth_spikes": smooth_spikes,
+        },
+    )
 
     loss = out["loss"]
     if lambda_e:

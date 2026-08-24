@@ -1,0 +1,22 @@
+{
+  "grid": "",
+  "t_fe_slab_nm": 0,
+  "l_gate_slab_nm": 0,
+  "t_il_slab_nm": 0,
+  "n_ch_slab": 0,
+  "eps_fe_bg": 0,
+  "workfunction": 0,
+  "area_factor": 0,
+  "fixq": "",
+  "dit": "",
+  "dite": "",
+  "agen": "",
+  "bgen": "",
+  "taun_srh": "",
+  "taup_srh": "",
+  "tau_e": 0,
+  "tau_p": 0,
+  "_comment": "Copy to calibration.local.json and fill in with YOUR device calibration. Those numbers are the output of a calibration campaign against measured hysteresis; this project does not ship anyone's.",
+  "_comment2": "eps_fe_bg is the ferroelectric's BACKGROUND relative permittivity, the value your .par carries for the film. It moved out of the .par because the fixed-slab thickness remap has to scale it with t_fe; see t1_driver.deck_values.",
+  "_comment3": "l_gate_slab_nm / t_il_slab_nm / n_ch_slab are the geometry YOUR grid was actually built at. They are only used when T1_REBUILD_MESH=1, as the control case: build a mesh at these numbers and the nominal design point must land on the same figures of merit the fixed-slab path gives. See t1/sde_fefet_mesh.cmd."
+}

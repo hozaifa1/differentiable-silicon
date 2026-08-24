@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from diffsilicon.shared.circuit import load_circuit
 from diffsilicon.shared.contract import (
     DEFAULT_VG_GRID,
     DIFFERENTIABLE_OUTPUTS,
@@ -40,8 +41,16 @@ def test_jacobian_row_order_frozen():
 def test_sweep_grid_frozen():
     assert NVG == 96
     assert DEFAULT_VG_GRID.shape == (96,)
-    assert DEFAULT_VG_GRID[0] == pytest.approx(-1.20)
-    assert DEFAULT_VG_GRID[-1] == pytest.approx(1.40)
+    # WIDENED on D2 from [-1.20, 1.40]; see contract.py for the measurement that
+    # forced it. The test is here to catch an ACCIDENTAL change, so it tracks the
+    # deliberate one rather than being deleted.
+    assert DEFAULT_VG_GRID[0] == pytest.approx(-3.50)
+    assert DEFAULT_VG_GRID[-1] == pytest.approx(1.50)
+    # V_read and V_leak must both stay inside the window, or the extraction is
+    # reading off the end of the curve.
+    cc = load_circuit()
+    assert DEFAULT_VG_GRID[0] < cc.v_leak < DEFAULT_VG_GRID[-1]
+    assert DEFAULT_VG_GRID[0] < cc.v_read < DEFAULT_VG_GRID[-1]
 
 
 @pytest.mark.parametrize("D", [3, 5, 12])
@@ -63,8 +72,10 @@ def test_design_vectors_are_nested():
 
 
 def test_theta_dimension_is_validated():
-    with pytest.raises(ValueError, match="dimension 4"):
-        make_oracle_input(np.zeros(4))
+    # 7, not 4: d=4 became a REAL design vector in the D3 recalibration (the
+    # fabrication knobs). Pick a dimension that is still not registered.
+    with pytest.raises(ValueError, match="dimension 7"):
+        make_oracle_input(np.zeros(7))
 
 
 def test_valid_dimensions_accepted():

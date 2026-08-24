@@ -19,7 +19,6 @@ exclusions.py` excludes deal.II from every gradient experiment with a categorica
 fills that cell.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -46,7 +45,7 @@ from diffsilicon.shared.contract import (  # noqa: E402
     OracleOutput,
 )
 from diffsilicon.shared.oracle import run_oracle  # noqa: E402
-from diffsilicon.shim.adjoint import AdjointShim, ShimConfig  # noqa: E402
+from diffsilicon.shim.adjoint import AdjointShim, shim_for, y_vector  # noqa: E402
 
 
 class InputSchema(OracleInput):
@@ -57,34 +56,28 @@ class InputSchema(OracleInput):
 class OutputSchema(OracleOutput):
     """The frozen contract, unchanged. See InputSchema."""
 
-# The shim is stateful on purpose: J, the trust radius and the
-# steps-since-refresh counter have to survive between endpoint calls, or every
-# VJP would cost a full refresh and the apparatus would be pointless. Keyed by
-# the non-differentiable half of the input, since a different sweep grid is a
-# different function.
-_SHIMS: dict[tuple, AdjointShim] = {}
-
-
 def _shim_for(inputs: InputSchema) -> AdjointShim:
-    key = (
-        int(np.asarray(inputs.theta).shape[-1]),
-        float(inputs.vds_lin),
-        float(inputs.vds_sat),
-        np.asarray(inputs.vg_grid, dtype=np.float64).tobytes(),
-    )
-    if key not in _SHIMS:
-        cfg = ShimConfig(
-            alpha=float(os.environ.get("SHIM_ALPHA", 0.02)),
-            refresh_every=int(os.environ.get("SHIM_REFRESH_EVERY", 4)),
-            max_oracle_calls=int(os.environ.get("SHIM_MAX_ORACLE_CALLS", 65)),
-        )
-        _SHIMS[key] = AdjointShim(inputs, cfg)
-    return _SHIMS[key]
+    """The per-grid shim, from the registry in diffsilicon.shim.adjoint.
+
+    The registry lives in the library rather than in this file so that an
+    in-process orchestrator holds the SAME object these endpoints do and can feed
+    it the measured trust-region rho. Served in a container it has no such handle
+    and the shim runs on its own staleness rule; both paths are supported and
+    neither is required by the other.
+    """
+    return shim_for(inputs)
 
 
 def apply(inputs: InputSchema) -> OutputSchema:
-    """Straight through to the oracle. No surrogate, no interpolation, no cache trick."""
-    return OutputSchema(**dict(run_oracle(inputs)))
+    """Straight through to the oracle. No surrogate, no interpolation, no cache trick.
+
+    The shim is TOLD the result on the way past. A forward evaluation is a true
+    (theta, y) pair that the caller already paid for, and handing it to the local
+    model is what lets Broyden keep J alive between refreshes for free.
+    """
+    out = run_oracle(inputs)
+    _shim_for(inputs).observe(np.asarray(inputs.theta, dtype=np.float64), y_vector(out))
+    return OutputSchema(**dict(out))
 
 
 def abstract_eval(abstract_inputs):

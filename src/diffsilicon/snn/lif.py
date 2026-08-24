@@ -14,8 +14,19 @@ Neuron: LIF with soft reset. The spike is a Heaviside forward and the DERIVATIVE
 OF A STATED SMOOTH RELAXATION backward -- see `soft_heaviside`. Bounded, so it does
 not blow up when the threshold itself moves during co-design.
 
-MIT-BIH inter-patient DS1/DS2 loading lands on D4; `synthetic_batch` exists so
-that the PyTorch <-> JAX boundary is testable today without a 1 GB download.
+Two networks live here.
+
+`LIFNet` is the D1 two-layer classifier. It is kept because the liveness tests,
+the gradient checks and the cheap Tier A path all run on it, and because it is
+the smallest thing that exercises the PyTorch <-> JAX boundary.
+
+`snn.lsnn.LSNNNet` is the D3 recalibration: the SAME device coupling wired into
+the thesis' verified LSNN topology -- delayed input synapses, a recurrent hidden
+layer split between plain LIF and adaptive LIF neurons, a low-pass readout
+filter. It lives in its own module and reuses `LIFNet._weights` unchanged.
+
+`synthetic_batch` remains for tests that must not touch the dataset; the real
+task is `diffsilicon.snn.ecg`.
 """
 
 from __future__ import annotations
@@ -29,7 +40,14 @@ import torch.nn.functional as F
 # cost of a 2-layer LIF on 32 samples is not a consideration.
 DTYPE = torch.float64
 
-__all__ = ["SurrGradSpike", "soft_heaviside", "LIFNet", "synthetic_batch", "balanced_ce", "PHI_KEYS"]
+__all__ = [
+    "SurrGradSpike",
+    "soft_heaviside",
+    "LIFNet",
+    "synthetic_batch",
+    "balanced_ce",
+    "PHI_KEYS",
+]
 
 # Order is load-bearing: it fixes the layout of every cotangent crossing the wire.
 PHI_KEYS = ("beta", "g_min", "g_max", "th_th", "sig_w")

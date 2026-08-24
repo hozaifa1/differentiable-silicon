@@ -1,10 +1,26 @@
 name: "snn-lif-ecg"
 version: "0.1.0"
 description: |
-  Surrogate-gradient LIF classifier parameterised by five device numbers, with a
-  class-balanced cross-entropy objective. vector_jacobian_product is
+  Surrogate-gradient spiking classifier parameterised by five device numbers,
+  with a class-balanced cross-entropy objective. vector_jacobian_product is
   torch.autograd.grad(L, phi) -- the PyTorch end of a gradient path that crosses
-  into JAX with no shared autodiff state. MIT-BIH inter-patient DS1/DS2 lands on D4.
+  into JAX with no shared autodiff state.
+
+  The network is the thesis LSNN: 3 inputs, 100 LIF + 60 adaptive-LIF recurrent
+  neurons, 10 synaptic delay taps per connection, low-pass readout. The task is
+  2000 curated MIT-BIH beats in four AAMI classes, INTRA-patient split (the
+  curated files have record identity stripped, so DS1/DS2 cannot be built from
+  them -- see diffsilicon/snn/ecg.py).
+
+  The beat data is NOT baked into the image: it is a preprocessing of a public
+  database and is not this project's to redistribute. Set DIFFSILICON_ECG_DIR, or
+  mount the .npz cache at results/cache/ecg/.
+
+  There is NO automatic fallback if the data is absent -- apply() raises, saying
+  where to point it. A run that quietly swapped the real task for a synthetic one
+  would be exactly the kind of silent surrogate this project exists to rule out.
+  Set SNN_TASK=synth to ask for the synthetic spike set deliberately; that is what
+  CI and the gradient checks use.
 
 build_config:
   package_data:

@@ -43,7 +43,7 @@ from ..shared.cache import content_hash
 from ..shared.contract import DIFFERENTIABLE_OUTPUTS, OracleInput, make_oracle_input
 from ..shared.oracle import run_oracle
 
-__all__ = ["ShimConfig", "AdjointShim", "fd_jacobian", "y_vector"]
+__all__ = ["ShimConfig", "AdjointShim", "fd_jacobian", "y_vector", "shim_for", "shim_key"]
 
 
 def y_vector(out) -> np.ndarray:
@@ -202,6 +202,58 @@ class AdjointShim:
         J = self.jacobian(theta)
         return J @ np.asarray(tangent_theta, dtype=np.float64).ravel()
 
+    # --- self-driving bookkeeping ----------------------------------------
+    def observe(self, theta: np.ndarray, y_new: np.ndarray) -> None:
+        """Take the free secant pair every forward evaluation hands over.
+
+        `apply` proxies to the oracle, so the shim sees a true (theta, y) pair on
+        every forward pass at no extra cost. Feeding it back here is what makes
+        the local model self-maintaining: without it `steps_since_refresh` never
+        moves, K never fires, and J silently stays pinned to wherever it was
+        anchored while the optimiser walks away from it.
+        """
+        theta = np.asarray(theta, dtype=np.float64).ravel()
+        if self.J is None or self.theta is None:
+            return
+        if float(np.linalg.norm(theta - self.theta)) <= 1e-12:
+            return
+        self.broyden_update(theta, np.asarray(y_new, dtype=np.float64).ravel())
+
     @property
     def calls(self) -> int:
         return self.ctr.calls
+
+
+# --- process-wide registry ------------------------------------------------
+# The shim is stateful on purpose: J, the trust radius and the
+# steps-since-refresh counter have to survive between endpoint calls, or every
+# VJP would cost a full refresh and the apparatus would be pointless.
+#
+# It lives HERE rather than inside tesseract_api.py so that an in-process
+# orchestrator and the Tesseract endpoints share one object. When T3 is served in
+# a container the orchestrator has no handle and the shim runs purely on its own
+# staleness rule (K, and the trust radius); locally the orchestrator can also feed
+# it the measured rho, which is strictly more information.
+_REGISTRY: dict[tuple, AdjointShim] = {}
+
+
+def shim_key(inputs: OracleInput) -> tuple:
+    """A different sweep grid is a different function, so it gets its own shim."""
+    return (
+        int(np.asarray(inputs.theta).shape[-1]),
+        float(inputs.vds_lin),
+        float(inputs.vds_sat),
+        np.asarray(inputs.vg_grid, dtype=np.float64).tobytes(),
+    )
+
+
+def shim_for(inputs: OracleInput, cfg: ShimConfig | None = None) -> AdjointShim:
+    key = shim_key(inputs)
+    if key not in _REGISTRY:
+        _REGISTRY[key] = AdjointShim(inputs, cfg or ShimConfig(
+            alpha=float(os.environ.get("SHIM_ALPHA", 0.02)),
+            refresh_every=int(os.environ.get("SHIM_REFRESH_EVERY", 4)),
+            trust_radius=float(os.environ.get("SHIM_TRUST_RADIUS", 0.15)),
+            max_oracle_calls=int(os.environ.get("SHIM_MAX_ORACLE_CALLS", 65)),
+        ))
+    return _REGISTRY[key]

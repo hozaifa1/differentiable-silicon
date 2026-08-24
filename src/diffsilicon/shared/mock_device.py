@@ -33,6 +33,7 @@ import jax
 import jax.numpy as jnp
 
 from .design import get_design
+from .material import EC_MV_CM, PR_UC_CM2
 
 jax.config.update("jax_enable_x64", True)
 
@@ -60,6 +61,12 @@ def _phys(theta_n: jnp.ndarray) -> dict[str, jnp.ndarray]:
     phys = lo + theta_n * (hi - lo)
     out = dict(zip(spec.names, phys, strict=True))
     # Defaults for parameters this design vector does not expose.
+    #
+    # Pr and Ec are LOCKED material constants, not defaults in the ordinary sense
+    # -- a design vector that omits them is not leaving them unspecified, it is
+    # declining to pretend they are adjustable. See `shared.material`.
+    out.setdefault("Pr", jnp.asarray(PR_UC_CM2))
+    out.setdefault("Ec", jnp.asarray(EC_MV_CM))
     out.setdefault("L_g", jnp.asarray(40.0))
     out.setdefault("log10_N_ch", jnp.asarray(17.0))
     out.setdefault("t_IL", jnp.asarray(1.0))
@@ -156,8 +163,22 @@ def analytic_foms(theta_n, cfg, vds: float = 0.05) -> dict[str, jnp.ndarray]:
     g_hi = id_rev(vr) / vds
     dg_dvth = 0.5 * (jax.grad(id_fwd)(vr) + jax.grad(id_rev)(vr)) / vds
 
-    # I_leak: the subthreshold LINE of the forward branch evaluated at V_leak.
-    i_leak = d["i_crit"] * jnp.power(10.0, (cfg.v_leak - d["vth_fwd"]) / ss_v) * (vds / 0.05)
+    # I_leak: the forward branch's CURRENT at V_leak, i.e. the same model
+    # evaluation used for g_lo and g_hi just above.
+    #
+    # CHANGED 2026-08-24 (D3), together with `extract.extract_branch`. This used
+    # to be the subthreshold LINE at V_leak,
+    #     i_crit * 10**((v_leak - vth_fwd) / ss_v),
+    # which matched an extraction that also extrapolated a line. Both sides have
+    # stopped extrapolating, because a real device has a leakage floor that no
+    # line knows about and the extrapolation was four decades wrong there.
+    #
+    # The two differ on the mock too, by up to 1.85% over the d=5 box: V_leak can
+    # sit close enough to V_th that the soft-min knee is already bending the
+    # curve away from the line. Keeping the old reference would have held the
+    # extraction to an accuracy target it should MISS -- the curve is the truth
+    # and the line is an approximation to it, not the other way round.
+    i_leak = id_fwd(cfg.v_leak)
 
     return {
         "ss": ss_v * 1e3,
