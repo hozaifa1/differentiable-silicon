@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-28T16:42:09",
+ "generated": "2026-08-29T08:42:31",
  "passed": 22,
  "total": 22,
  "checks": [
@@ -8,7 +8,7 @@
    "check": "module imports",
    "backend": "-",
    "ok": true,
-   "seconds": 2.18,
+   "seconds": 8.26,
    "detail": "ok",
    "error": null
   },
@@ -26,7 +26,7 @@
    "check": "apply returns finite figures of merit",
    "backend": "replay",
    "ok": true,
-   "seconds": 0.21,
+   "seconds": 0.78,
    "detail": "ss=74.24, vth_fwd=0.8178, vth_rev=-1.244, i_leak=4.112e-11, converged=1",
    "error": null
   },
@@ -44,7 +44,7 @@
    "check": "module imports",
    "backend": "-",
    "ok": true,
-   "seconds": 0.01,
+   "seconds": 0.05,
    "detail": "ok",
    "error": null
   },
@@ -62,7 +62,7 @@
    "check": "apply returns finite figures of merit",
    "backend": "devsim",
    "ok": true,
-   "seconds": 0.27,
+   "seconds": 0.77,
    "detail": "ss=82.14, vth_fwd=0.5983, vth_rev=0.07039, i_leak=1.302e-11, converged=1",
    "error": null
   },
@@ -71,7 +71,7 @@
    "check": "abstract_eval matches apply",
    "backend": "devsim",
    "ok": true,
-   "seconds": 0.01,
+   "seconds": 0.0,
    "detail": "10 leaves agree",
    "error": null
   },
@@ -80,7 +80,7 @@
    "check": "module imports",
    "backend": "-",
    "ok": true,
-   "seconds": 0.02,
+   "seconds": 0.07,
    "detail": "ok",
    "error": null
   },
@@ -98,7 +98,7 @@
    "check": "apply proxies to the oracle",
    "backend": "mock",
    "ok": true,
-   "seconds": 0.94,
+   "seconds": 1.91,
    "detail": "ss=83.06, vth_fwd=0.5248, i_leak=1.11e-10, converged=1",
    "error": null
   },
@@ -116,7 +116,7 @@
    "check": "jacobian is 7 x D and finite",
    "backend": "mock",
    "ok": true,
-   "seconds": 0.92,
+   "seconds": 1.5,
    "detail": "shape (7, 4), |J|_F=25.65",
    "error": null
   },
@@ -125,7 +125,7 @@
    "check": "vjp equals J^T applied to the cotangent",
    "backend": "mock",
    "ok": true,
-   "seconds": 0.82,
+   "seconds": 1.72,
    "detail": "J^T 1 = [  7.1432 -19.1967  12.5043   8.9293]",
    "error": null
   },
@@ -134,7 +134,7 @@
    "check": "jvp equals J applied to the tangent",
    "backend": "mock",
    "ok": true,
-   "seconds": 0.82,
+   "seconds": 1.69,
    "detail": "J 1 finite, 7 rows",
    "error": null
   },
@@ -143,7 +143,7 @@
    "check": "a repeat vjp costs zero solver calls",
    "backend": "mock",
    "ok": true,
-   "seconds": 0.69,
+   "seconds": 1.31,
    "detail": "0 extra probes (total 9)",
    "error": null
   },
@@ -152,7 +152,7 @@
    "check": "module imports",
    "backend": "-",
    "ok": true,
-   "seconds": 3.1,
+   "seconds": 4.69,
    "detail": "ok",
    "error": null
   },
@@ -170,7 +170,7 @@
    "check": "apply runs the network",
    "backend": "frozen",
    "ok": true,
-   "seconds": 0.68,
+   "seconds": 1.41,
    "detail": "loss=1.1, spikes=0.4478, accuracy=0.5",
    "error": null
   },
@@ -188,7 +188,7 @@
    "check": "vjp returns dL/dphi for all five",
    "backend": "frozen",
    "ok": true,
-   "seconds": 1.29,
+   "seconds": 5.98,
    "detail": "dL/dphi = [-3.3994  0.      0.      0.3737  3.6544]",
    "error": null
   },
@@ -197,7 +197,7 @@
    "check": "jvp runs",
    "backend": "frozen",
    "ok": true,
-   "seconds": 1.31,
+   "seconds": 5.53,
    "detail": "dL along 1 = 0.628715",
    "error": null
   }
