@@ -29,6 +29,12 @@ dev = [
     "pytest>=8.0",
     "pytest-timeout>=2.3",
     "ruff>=0.6",
+    # ADDED 2026-08-29 (D6). Every scripts/fig*.py imports matplotlib, and the
+    # README tells a reader to run them to regenerate the figures from the
+    # committed cache. It was declared nowhere, so a clean clone died on
+    # `ModuleNotFoundError: No module named 'matplotlib'` -- found by the D8
+    # clean-clone dry run, pulled forward to D6.
+    "matplotlib>=3.8",
 ]
 
 # Keep torch CPU-only. The default Linux wheel drags in ~2.5 GB of CUDA runtime,

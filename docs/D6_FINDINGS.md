@@ -306,17 +306,19 @@ call, and a figure has no business changing it.
 
 1.1 MB of JSONL is not evidence, it is a file. Four statements, each checkable:
 
-**What produced the numbers.** 5,749 forward evaluations over 1,763 distinct
-design points:
+**What produced the numbers.** The log grows every time the repository is
+exercised, so any count here is a snapshot; these are the figures from the final
+D6 audit, and `results/runs/provenance_audit_d6.json` is always authoritative.
+5,910 forward evaluations over 1,805 distinct design points:
 
 | backend | calls | distinct points | solver time |
 |---|---:|---:|---:|
-| devsim | 5,509 | 1,705 | 31.23 h |
-| mock | 203 | 119 | 0.02 h |
-| sentaurus | 37 | 16 | 2.13 h |
+| devsim | 5,648 | 1,747 | 32.26 h |
+| mock | 223 | 119 | 0.02 h |
+| sentaurus | 39 | 16 | 2.26 h |
 
-19 evaluations (0.33%) are logged as unconverged — refused by the extraction
-rather than silently used.
+The unconverged evaluations are logged rather than dropped — refused by the
+extraction, not silently used.
 
 **Every step of the flagship is in it.** All 15 steps of `flagship-d4-fixed` have
 a provenance line at their recorded `content_hash`, a real solver wrote every one,

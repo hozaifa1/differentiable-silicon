@@ -51,12 +51,21 @@ Details and the full before/after: [`docs/D3_RECALIBRATION.md`](docs/D3_RECALIBR
 
 ## Reproduction — four tiers
 
-**Tier A — 2 min, no Docker, no license.** The complete pipeline against an analytic mock oracle,
+**Tier A — no Docker, no license.** The complete pipeline against an analytic mock oracle,
 in-process via `Tesseract.from_tesseract_api()`. Proves every wire, every schema, every gradient hop.
 
 ```bash
-uv sync --group dev && uv run pytest
+uv sync --extra snn --group dev && uv run pytest
 ```
+
+`--extra snn` is not optional: T4 is the PyTorch end of the gradient path, so `torch` is a
+requirement of Tier A rather than a nicety, and `uv sync --group dev` alone leaves the test
+collection failing on `ModuleNotFoundError: No module named 'torch'`.
+
+**Timed on a fresh clone into a fresh venv, not estimated:** `uv sync` 74 s, then **352 s cold /
+314 s warm** for the 152 tests that run (6 skip without DEVSIM). The cold/warm gap is small because
+`results/cache/mock/` is only 124 KiB — nearly all of that time is the spiking network itself, 111
+timesteps per beat in float64. Budget six minutes, not two.
 
 **Tier B — Docker, no license.** Swap the commercial solver for the Apache-2.0 one.
 
