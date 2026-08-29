@@ -123,11 +123,18 @@ This is checked, not claimed. The script blocks `socket` and `subprocess` and st
 standing in for **0.93 h** of commercial-solver time. If anything came off the solver rather than
 the cache it fails with a traceback instead of returning a number.
 
-Figures 3 and 4 replay the same way, from `results/cache/devsim/`, with no solver call:
+Figure 3 replays the same way, from `results/cache/devsim/`, with no solver call:
 
 ```bash
-uv run python scripts/fig3_hysteresis_descent.py && uv run python scripts/fig4_spike_raster.py
+uv run python scripts/fig3_hysteresis_descent.py
 ```
+
+Figure 4 does not, and the reason is worth stating rather than hiding: it needs the 2000 curated
+MIT-BIH beats, and **this repository deliberately does not ship them** — they are the thesis' own
+preprocessing of a public database, and this repo is public. Set `DIFFSILICON_ECG_DIR` to the
+folder holding `up/` and `down/` and it runs; without it, the numbers behind the figure are banked
+in `results/runs/fig4_spike_raster.json`. The network weights it needs are committed
+(`results/cache/w0/`), so nothing is retrained either way.
 
 **Tier D — bring your own license.** See [`docs/T1_CONTAINER.md`](docs/T1_CONTAINER.md) and
 `.env.example`. `t1/Dockerfile` expects the Sentaurus tree bind-mounted at `/opt/synopsys` and takes
