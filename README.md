@@ -150,8 +150,18 @@ in `results/runs/fig4_spike_raster.json`. The network weights it needs are commi
 `SNPSLMD_LICENSE_FILE` for license-server passthrough; the flagship itself runs uncontainerised, and
 that document explains why.
 
+Every figure and every banked measurement carries a sha256 in
+[`results/manifest.json`](results/manifest.json), so you can tell whether the figure you are
+looking at is the one the writeup describes:
+
+```bash
+uv run python scripts/make_manifest.py --check
+```
+
 ## Documents
 
+- [`docs/WRITEUP.md`](docs/WRITEUP.md) — **the case-study report.** The composition, the
+  adjoint, the results, the limitations, and the two upstream bugs.
 - [`docs/D1_FINDINGS.md`](docs/D1_FINDINGS.md) — every gate result, every measured
   number, and the eleven places where a measurement overruled the plan.
 - [`docs/D2_FINDINGS.md`](docs/D2_FINDINGS.md) — the open oracle, and the four things

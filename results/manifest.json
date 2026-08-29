@@ -1,0 +1,162 @@
+{
+  "generated": "2026-08-29T09:43:43",
+  "commit": "c740410f3057e9a437b93e233b0207a96f057707",
+  "what": "sha256 of every published figure and every banked measurement artefact, so a reader can tell whether the figure they are looking at is the one the writeup describes.",
+  "verify": "python scripts/make_manifest.py --check",
+  "figures": {
+    "docs/figures/fig1_pca_manifold.pdf": {
+      "sha256": "7fd0201e66600bddfff15a9f23c721db638f539045c9d4a78e8566ee44a36601",
+      "bytes": 50549,
+      "drawn_by": "scripts/fig1_pca_manifold.py",
+      "drawn_from": "results/runs/manifold_cloud_d4.json"
+    },
+    "docs/figures/fig1_pca_manifold.png": {
+      "sha256": "a8c271e6368d582b47c30397499178dc799ad12f81a0a6782a8f5bed8d6aad84",
+      "bytes": 383287,
+      "drawn_by": "scripts/fig1_pca_manifold.py",
+      "drawn_from": "results/runs/manifold_cloud_d4.json"
+    },
+    "docs/figures/fig2_budget_crossover.pdf": {
+      "sha256": "2e6e73d9591622c812f862d56612a2a509c04e351d7acb6c73163575de5dcbef",
+      "bytes": 45239,
+      "drawn_by": "scripts/fig2_budget_crossover.py",
+      "drawn_from": "results/runs/race_crossover_sweep.json"
+    },
+    "docs/figures/fig2_budget_crossover.png": {
+      "sha256": "19bed2053356389e988c91629eceddbda84227349bf969bd81c1a9f12337cb65",
+      "bytes": 471042,
+      "drawn_by": "scripts/fig2_budget_crossover.py",
+      "drawn_from": "results/runs/race_crossover_sweep.json"
+    },
+    "docs/figures/fig3_hysteresis_descent.pdf": {
+      "sha256": "022a9147df44515a4f54a8c436bc7c574d6bbe55c1b257ffd8d39990a08050b8",
+      "bytes": 45087,
+      "drawn_by": "scripts/fig3_hysteresis_descent.py",
+      "drawn_from": "results/runs/fig3_hysteresis_descent.json"
+    },
+    "docs/figures/fig3_hysteresis_descent.png": {
+      "sha256": "09a02dc151ddea264598632ccb89012725ab342a862cff921ef3c15d9c2dd2ce",
+      "bytes": 584050,
+      "drawn_by": "scripts/fig3_hysteresis_descent.py",
+      "drawn_from": "results/runs/fig3_hysteresis_descent.json"
+    },
+    "docs/figures/fig4_spike_raster.pdf": {
+      "sha256": "71a4fc593505c2a9cb6bf0b42ad21efd8a958fd1445f85995ff72528351dec0e",
+      "bytes": 169107,
+      "drawn_by": "scripts/fig4_spike_raster.py",
+      "drawn_from": "results/runs/fig4_spike_raster.json"
+    },
+    "docs/figures/fig4_spike_raster.png": {
+      "sha256": "8c30e9cb121099d3a7c1b2189569d93ca2e4794b401d40511c9df2cb55751052",
+      "bytes": 589638,
+      "drawn_by": "scripts/fig4_spike_raster.py",
+      "drawn_from": "results/runs/fig4_spike_raster.json"
+    },
+    "docs/figures/fig5_jacobian_and_decay.pdf": {
+      "sha256": "7a0fa3f8bb8dcdfe037caf1b7ef40a32324fd5c849ab6b7186d57e239695ccf1",
+      "bytes": 44917,
+      "drawn_by": "scripts/fig5_jacobian_and_decay.py",
+      "drawn_from": "results/runs/fig5_jacobian_and_decay.json"
+    },
+    "docs/figures/fig5_jacobian_and_decay.png": {
+      "sha256": "76a20e3764f44b1cabcd338d2a3558b9a2d94966a87f7f279b48a3eb196e2c80",
+      "bytes": 376335,
+      "drawn_by": "scripts/fig5_jacobian_and_decay.py",
+      "drawn_from": "results/runs/fig5_jacobian_and_decay.json"
+    }
+  },
+  "runs": {
+    "results/runs/cross_check_mock_devsim_d4.json": {
+      "sha256": "b25aab93a407450a3014f3bbaf29a08930e36c11144a83164a9f5a8fce04a4a4",
+      "bytes": 5174
+    },
+    "results/runs/cross_check_sentaurus_devsim_d4.json": {
+      "sha256": "0a4f39cc631eac429b15945efe295e1c0e6c2d9b63d552183c318f149d89690a",
+      "bytes": 4935
+    },
+    "results/runs/fig3_hysteresis_descent.json": {
+      "sha256": "7d320cde9c9cbe6b092010640a5e5f54490cb6be3467f0f190c34cd3e119c22c",
+      "bytes": 6036
+    },
+    "results/runs/fig4_spike_raster.json": {
+      "sha256": "2ba7fc8e91900380ef8eefd801507c9e6e7e43ff8b9371704f6117588e1344d1",
+      "bytes": 6537
+    },
+    "results/runs/fig5_jacobian_and_decay.json": {
+      "sha256": "a2444d6724f7e916ddde36d00d9515cd1d4114edeee9e72faf4ef9bbe66e85f2",
+      "bytes": 1583
+    },
+    "results/runs/fom_correlations_d5.json": {
+      "sha256": "94d67f645293be60cdde79815189239f820b7e1412e3e74bd4b9334f3123c4ca",
+      "bytes": 3459
+    },
+    "results/runs/h_ablation_d4.json": {
+      "sha256": "d9eb6c2beb535c30f58190946fbf88342470c141f790cba9c81e4c9aa69bf829",
+      "bytes": 9208
+    },
+    "results/runs/manifold_cloud_d4.json": {
+      "sha256": "33562a1dba8d68695e50f6f6269ac9547b340a96ee581b7994f02850ba0271e2",
+      "bytes": 158189
+    },
+    "results/runs/provenance_audit_d6.json": {
+      "sha256": "b7fb4cb6a44bc165fd2e8d62577d9fc6b8dc7e52e38051f2bd2eeca82761f860",
+      "bytes": 5734
+    },
+    "results/runs/race_crossover_sweep.json": {
+      "sha256": "3ee4e93e8fba94a9498f9814539f383a471e2b2ac04ca183cd3da647d549da60",
+      "bytes": 73444
+    },
+    "results/runs/race_d4.json": {
+      "sha256": "0d7175442ce4f59eeaeb9ab5b80232143fe160bc05fc7be366309f5e24017fd8",
+      "bytes": 21940
+    },
+    "results/runs/race_d4_budget20.json": {
+      "sha256": "19fbcebae9c6605876932182bab6cf7cb830df8b1fa199e530567ccfc5bc24d3",
+      "bytes": 9365
+    },
+    "results/runs/race_d4_gradient.json": {
+      "sha256": "540e7235d0692900537e7600af2769c0e30beaaaf8e473997c54b35469b0e229",
+      "bytes": 732
+    },
+    "results/runs/rebaseline_d3_devsim.json": {
+      "sha256": "da53d7a40d6bdc523f3ec62cd7a842798ae8ab30b793add763d9c6d58175e47a",
+      "bytes": 9470
+    },
+    "results/runs/rebaseline_d3_mock.json": {
+      "sha256": "4c36dd807a4b6daca332c42b180eda6892ab3bdd0e3cb8596e89028b0ceefd7e",
+      "bytes": 3799
+    },
+    "results/runs/rebaseline_d3_sentaurus.json": {
+      "sha256": "0ae17f75926f8ea41703fe0ce4a160b2261c61af45a29a5f3f82c36e05dfe7f9",
+      "bytes": 8706
+    },
+    "results/runs/smoke_tesseracts.json": {
+      "sha256": "5fd7a92c53dd83ad9ab0133d0e08741fdfb9b9edc7c63d7735303afb90441f50",
+      "bytes": 4656
+    },
+    "results/runs/snn_calibration_d3.json": {
+      "sha256": "eb91f683ac1379ee5c688559534ae89e87f442b342c6c18a0814b29e8ff126ab",
+      "bytes": 6719
+    },
+    "results/runs/t1_structural_zeros_d6.json": {
+      "sha256": "1b75c5ec6975f7c6ff6c788ba92c61d503b9f387b87a42817ca01319c4b10bed",
+      "bytes": 3535
+    },
+    "results/runs/tier_c_replay_d6.json": {
+      "sha256": "46261a4175733334af9097c42d81dbd7e50b6ee297e3bf04e42d97b4f38b139a",
+      "bytes": 5200
+    },
+    "results/runs/v2_broyden_decay_d6.json": {
+      "sha256": "53b0e67302fea75ffd14b55275b390fdec5f98378d7d32e3f44c9763e8e2b885",
+      "bytes": 6489
+    },
+    "results/runs/v6_manifold_control_d4.json": {
+      "sha256": "07fa3d640653ff9225e40b359ba4de570cd6b390787de4bfba5538f244e1bbdd",
+      "bytes": 5534
+    },
+    "results/runs/v6_manifold_control_d5.json": {
+      "sha256": "a944fcce48271abc9a8fe2c6dfdc4c0e516795455a0bf7521f70df4bec4e1a1d",
+      "bytes": 6624
+    }
+  }
+}
