@@ -1,0 +1,102 @@
+{
+  "tag": "d6-trainmode-check",
+  "config": {
+    "d": 4,
+    "backend": "devsim",
+    "max_oracle_calls": 10,
+    "max_steps": 1,
+    "alpha": 0.02,
+    "refresh_every": 4,
+    "trust_radius": 0.08,
+    "min_radius": 0.012,
+    "max_radius": 0.4,
+    "grad_norm_cap": 10.0,
+    "lambda_e": 1000000.0,
+    "lambda_r": 0.0,
+    "seed": 0,
+    "batch": 16,
+    "train_mode": "frozen",
+    "tag": "d6-trainmode-check",
+    "out_dir": "results/runs/d6-trainmode-check",
+    "theta0": "0.05,0.80,0.90,0.70"
+  },
+  "wall_seconds": 16.9,
+  "steps": 1,
+  "accepted": 1,
+  "rejected": 0,
+  "oracle_calls": 10,
+  "shim_probes": 9,
+  "jacobian_refreshes": 1,
+  "broyden_updates": 1,
+  "trust_radius": 0.128,
+  "objective_initial": 1.3995774659049987,
+  "objective_final": 1.2934729294818577,
+  "objective_delta": -0.106104536423141,
+  "ce_initial": 1.3995774619956554,
+  "ce_final": 1.29347292552944,
+  "ce_delta": -0.10610453646621543,
+  "accuracy_initial": 0.25,
+  "accuracy_final": 0.25,
+  "spikes_initial": 0.43437148085585586,
+  "spikes_final": 0.4391575168918919,
+  "theta_initial": [
+    0.05,
+    0.8,
+    0.9,
+    0.7
+  ],
+  "theta_final": [
+    0.08388757332989662,
+    0.7438539805680797,
+    0.8718211596962155,
+    0.6638723120737693
+  ],
+  "theta_initial_phys": {
+    "t_fe": 5.5,
+    "L_g": 52.0,
+    "log10_N_ch": 17.8,
+    "t_IL": 1.5499999999999998
+  },
+  "theta_final_phys": {
+    "t_fe": 5.838875733298966,
+    "L_g": 49.75415922272319,
+    "log10_N_ch": 17.743642319392432,
+    "t_IL": 1.495808468110654
+  },
+  "fom_initial": {
+    "ss": 71.14374427479765,
+    "vth_fwd": 0.6438854647057375,
+    "vth_rev": 0.22859662155356333,
+    "i_leak": 4.981030787532028e-13,
+    "g_lo": 6.851008257472382e-07,
+    "g_hi": 0.00012108391578134626,
+    "dg_dvth": 0.0002231101080329885
+  },
+  "fom_final": {
+    "ss": 72.84542896183082,
+    "vth_fwd": 0.642235536999947,
+    "vth_rev": 0.20143300072356693,
+    "i_leak": 7.425057066893048e-13,
+    "g_lo": 7.607548345051609e-07,
+    "g_hi": 0.0001381307950365979,
+    "dg_dvth": 0.00023562773917509507
+  },
+  "phi_initial": {
+    "beta": 0.6137154230416458,
+    "g_min": 6.851008257472382e-07,
+    "g_max": 0.00012108391578134626,
+    "th_th": 5.62209126180273,
+    "sig_w": 0.11581575696287849
+  },
+  "phi_final": {
+    "beta": 0.6128102171049015,
+    "g_min": 7.607548345051609e-07,
+    "g_max": 0.0001381307950365979,
+    "th_th": 5.461061867833901,
+    "sig_w": 0.11105870647695179
+  },
+  "rho_positive_fraction": 1.0,
+  "rho_history": [
+    1.1958354518563803
+  ]
+}
