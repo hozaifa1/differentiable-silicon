@@ -1,27 +1,27 @@
 {
-  "generated": "2026-08-29T08:16:34",
+  "generated": "2026-08-29T09:10:39",
   "log": "results/runs/provenance.jsonl",
-  "evaluations": 5749,
-  "distinct_design_points": 1763,
+  "evaluations": 5910,
+  "distinct_design_points": 1805,
   "by_backend": {
     "devsim": {
-      "calls": 5509,
-      "distinct_points": 1705,
-      "solver_hours": 31.233
+      "calls": 5648,
+      "distinct_points": 1747,
+      "solver_hours": 32.26
     },
     "mock": {
-      "calls": 203,
+      "calls": 223,
       "distinct_points": 119,
-      "solver_hours": 0.016
+      "solver_hours": 0.018
     },
     "sentaurus": {
-      "calls": 37,
+      "calls": 39,
       "distinct_points": 16,
-      "solver_hours": 2.126
+      "solver_hours": 2.255
     }
   },
   "unconverged_evaluations": 19,
-  "span": "2026-08-26 14:05 -> 2026-08-29 08:09",
+  "span": "2026-08-26 14:05 -> 2026-08-29 09:10",
   "span_note": "Starts 2026-08-26, not D1: the D3 extraction rewrite re-keyed every cache entry and the log was restarted with the cache it describes.",
   "flagship": {
     "source": "results/runs/flagship-d4-fixed/steps.jsonl",

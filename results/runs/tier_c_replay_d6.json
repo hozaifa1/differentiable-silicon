@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-29T07:52:20",
+  "generated": "2026-08-29T09:10:38",
   "what": "Tier C: every banked Sentaurus number regenerated from the replay cache with sockets and subprocesses blocked.",
   "network_blocked": true,
   "subprocess_blocked": true,
@@ -15,7 +15,7 @@
   "values_bit_identical": 164,
   "mismatches": [],
   "pass": true,
-  "wall_seconds": 1.356,
+  "wall_seconds": 1.445,
   "cache": {
     "entries": 32,
     "bytes": 149839,
