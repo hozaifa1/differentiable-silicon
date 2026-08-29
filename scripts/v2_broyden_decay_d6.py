@@ -95,7 +95,7 @@ def main() -> int:
         DIFFERENTIABLE_OUTPUTS,
         make_oracle_input,
     )
-    from diffsilicon.shim.adjoint import ShimConfig, fd_jacobian, y_vector
+    from diffsilicon.shim.adjoint import _Counter, ShimConfig, fd_jacobian
     from diffsilicon.shared.oracle import run_oracle
 
     rows = [json.loads(line) for line in
@@ -151,8 +151,21 @@ def main() -> int:
     j_hat = None
     y_prev = None
     t_prev = None
+    ctr = _Counter()
+    stopped = None
     for k, theta in enumerate(path):
-        j_true, y = fd_jacobian(theta, make_oracle_input(theta), cfg, central=True)
+        # A measurement script must not lose 25 minutes of solver time because
+        # one late probe was unsolvable. Record where it stopped and bank what
+        # it has. The shim salvages a single failed SIDE by itself as of D6;
+        # this catches the case where a whole coordinate is unmeasurable.
+        try:
+            j_true, y = fd_jacobian(theta, make_oracle_input(theta), cfg,
+                                    ctr, central=True)
+        except Exception as exc:  # noqa: BLE001 - reported, not swallowed
+            stopped = {"k": k, "theta": [float(v) for v in theta],
+                       "error": f"{type(exc).__name__}: {exc}"[:400]}
+            print(f"  k={k}  STOPPED: {type(exc).__name__}: {str(exc)[:120]}")
+            break
         if k == 0:
             j_hat = j_true.copy()
             cos_j = cos_g = 1.0
@@ -194,11 +207,29 @@ def main() -> int:
         "refresh_every_in_use": 4,
         "probes_required": len(keys),
         "probes_from_cache": len(keys) - len(miss),
-        "probes_solved": len(miss),
+        "probes_attempted": ctr.calls,
+        "probes_refused": ctr.refused,
+        "columns_salvaged_one_sided": ctr.salvaged_columns,
+        "points_measured": len(out_rows),
+        "points_on_path": len(path),
+        "stopped_at": stopped,
         "wall_seconds": round(wall, 2),
         "rows": out_rows,
     }
     Path(args.out).write_text(json.dumps(result, indent=2), encoding="utf-8")
+    if stopped:
+        print(f"\nSTOPPED at k={stopped['k']} of {len(path)}: "
+              f"{stopped['error'][:160]}")
+        print(f"{len(out_rows)} points measured and banked. The curve up to "
+              f"k={len(out_rows) - 1} is complete, and that is the range that "
+              f"matters -- refresh_every is 4.")
+    if ctr.refused:
+        kinds: dict = {}
+        for r in ctr.refused:
+            kinds[r.get("kind", "?")] = kinds.get(r.get("kind", "?"), 0) + 1
+        print(f"probes salvaged rather than fatal: {kinds}")
+    if ctr.salvaged_columns:
+        print(f"one-sided columns: {ctr.salvaged_columns}")
     print(f"\nwall {wall / 60:.1f} min; written to {args.out}")
     return 0
 

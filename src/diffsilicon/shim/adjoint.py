@@ -207,11 +207,55 @@ def fd_jacobian(
     J = np.zeros((len(DIFFERENTIABLE_OUTPUTS), D), dtype=np.float64)
 
     def _try(t):
-        """The probe, or None if the oracle could not measure that device."""
+        """The probe, or None if the oracle could not measure that device.
+
+        TWO WAYS A PROBE FAILS, AND UNTIL D6 ONLY ONE OF THEM WAS SURVIVABLE.
+
+        `OracleNotConverged` is the solver returning numbers the extraction
+        refuses -- a threshold read from past the end of the sweep, a
+        non-finite current. That has been salvaged since D4.
+
+        The other way is the solver PROCESS DYING. DEVSIM runs out of process
+        and raises `devsim_py3.error: Convergence failure!` on a matrix it
+        cannot factor; `oracle_devsim._solve_out_of_process` turns a non-zero
+        exit into a plain `RuntimeError`, which sailed straight past this
+        handler and out of `fd_jacobian`. `OracleNotConverged`'s own docstring
+        says a refusal is "handled exactly like a solver crash" -- and a solver
+        crash was not handled at all.
+
+        FOUND 2026-08-29 (D6), by the V2 re-measurement, which walked the
+        flagship's path and hit a probe the D4 run happened not to visit:
+        "There was a floating point exception of type Invalid, Divide-by-zero
+        during LU Factorization". One probe of nine, and it took the run with
+        it -- after 25 minutes of solver time already spent, none of which was
+        recoverable. On the flagship that is a lost run, not a lost column.
+
+        So both failures now cost their own SIDE and nothing more. They are
+        recorded separately in `ctr.refused` so a run log says which happened:
+        a device the extraction could not read is a statement about the design
+        box, and a solver that segfaulted is a statement about the solver.
+
+        `OracleBudgetExhausted` is re-raised explicitly. It is also a
+        RuntimeError, and swallowing the budget cap as if it were a bad probe
+        would turn a hard limit into a silently degraded Jacobian.
+
+        A systematic failure -- DEVSIM missing, a broken install -- still stops
+        the run rather than returning a fabricated Jacobian, because the caller
+        below raises when BOTH neighbours of a coordinate are gone.
+        """
         try:
             return _probe(t, template, cfg, ctr)
+        except OracleBudgetExhausted:
+            raise
         except OracleNotConverged as exc:
-            ctr.refused.append({"theta": [float(v) for v in t], "detail": str(exc)[:300]})
+            ctr.refused.append({"theta": [float(v) for v in t],
+                                "kind": "extraction-refused",
+                                "detail": str(exc)[:300]})
+            return None
+        except RuntimeError as exc:
+            ctr.refused.append({"theta": [float(v) for v in t],
+                                "kind": "solver-crashed",
+                                "detail": str(exc)[:300]})
             return None
 
     for i in range(D):
