@@ -53,8 +53,7 @@ solver process died — the second escaped as a bare `RuntimeError`. The V2 run 
 exactly that and lost 25 minutes of solver time. Fixed; the re-run then salvaged
 two crashed probes and completed. See §7.
 
-**Everything is committed.** Seven commits, working tree clean. Not pushed —
-see §8.
+**Everything is committed**, working tree clean. Not pushed — see §8.
 
 ---
 
@@ -517,7 +516,9 @@ the opposite of what it is for.
 
 ## 8. Everything is committed. Nothing is pushed.
 
-Seven commits on `main`, working tree clean:
+Every change made today is committed and the working tree is clean.
+`git log --oneline 1e4c55b..HEAD` is the authoritative list; at the time of
+writing it reads:
 
 | commit | what |
 |---|---|
@@ -527,7 +528,12 @@ Seven commits on `main`, working tree clean:
 | `951364b` | both broken README commands, and the eleven cited-but-untracked artefacts |
 | `7e77fd8` | README: Figure 4 needs beats this repo does not ship |
 | `db36309` | the shim's solver-crash salvage, and Figure 5 |
-| *(this one)* | V2's numbers, Figure 5 drawn, and these findings |
+| `f92d834` | V2's numbers, Figure 5 drawn, and these findings |
+| `5feeba4` | the audits re-run after the salvage fix, and their artefacts |
+
+A count is deliberately not quoted in the line above: any commit that corrects
+the count invalidates it, which is the sort of number that is wrong in every
+document that carries it.
 
 The repository had been running out of an uncommitted working tree since D3 —
 5,886 lines of source changes and every figure and finding — on a repository that
