@@ -1,0 +1,139 @@
+{
+  "generated": "2026-08-29T08:36:29",
+  "source": "results/cache/sentaurus/ via results/runs/cross_check_sentaurus_devsim_d4.json",
+  "backend": "sentaurus (fixed-mesh path)",
+  "theta": [
+    0.2,
+    0.5,
+    0.5,
+    0.3333333333333333
+  ],
+  "alpha": 0.04,
+  "solver_calls_made": 0,
+  "columns": [
+    {
+      "column": "t_fe",
+      "curve_identical_both_sides": false,
+      "foms_that_move": [
+        "dg_dvth",
+        "g_hi",
+        "g_lo",
+        "i_leak",
+        "ss",
+        "vth_fwd",
+        "vth_rev"
+      ],
+      "verdict": "real -- the solver returns a different device",
+      "sides": [
+        {
+          "sign": 1.0,
+          "cached": true,
+          "curve_identical": false,
+          "foms_that_move": [
+            "ss",
+            "vth_fwd",
+            "vth_rev",
+            "i_leak",
+            "g_lo",
+            "g_hi",
+            "dg_dvth"
+          ]
+        },
+        {
+          "sign": -1.0,
+          "cached": true,
+          "curve_identical": false,
+          "foms_that_move": [
+            "ss",
+            "vth_fwd",
+            "vth_rev",
+            "i_leak",
+            "g_lo",
+            "g_hi",
+            "dg_dvth"
+          ]
+        }
+      ]
+    },
+    {
+      "column": "L_g",
+      "curve_identical_both_sides": true,
+      "foms_that_move": [
+        "vth_fwd",
+        "vth_rev"
+      ],
+      "verdict": "SPURIOUS -- identical curve, but the extraction moves: I_crit = 100 nA * W / L_g reads a different threshold off the same current",
+      "sides": [
+        {
+          "sign": 1.0,
+          "cached": true,
+          "curve_identical": true,
+          "foms_that_move": [
+            "vth_fwd",
+            "vth_rev"
+          ]
+        },
+        {
+          "sign": -1.0,
+          "cached": true,
+          "curve_identical": true,
+          "foms_that_move": [
+            "vth_fwd",
+            "vth_rev"
+          ]
+        }
+      ]
+    },
+    {
+      "column": "log10_N_ch",
+      "curve_identical_both_sides": true,
+      "foms_that_move": [],
+      "verdict": "structurally zero -- identical curve, identical FoMs",
+      "sides": [
+        {
+          "sign": 1.0,
+          "cached": true,
+          "curve_identical": true,
+          "foms_that_move": []
+        },
+        {
+          "sign": -1.0,
+          "cached": true,
+          "curve_identical": true,
+          "foms_that_move": []
+        }
+      ]
+    },
+    {
+      "column": "t_IL",
+      "curve_identical_both_sides": true,
+      "foms_that_move": [],
+      "verdict": "structurally zero -- identical curve, identical FoMs",
+      "sides": [
+        {
+          "sign": 1.0,
+          "cached": true,
+          "curve_identical": true,
+          "foms_that_move": []
+        },
+        {
+          "sign": -1.0,
+          "cached": true,
+          "curve_identical": true,
+          "foms_that_move": []
+        }
+      ]
+    }
+  ],
+  "real_physics": [
+    "t_fe"
+  ],
+  "structurally_zero": [
+    "log10_N_ch",
+    "t_IL"
+  ],
+  "spuriously_nonzero": [
+    "L_g"
+  ],
+  "correction": "The D4/D5 notes say three of four T1 columns are identically zero. Measured: two are (log10_N_ch, t_IL). The third, L_g, returns a byte-identical Id-Vg curve but a different vth_fwd, because the constant-current criterion I_crit = 100 nA * W / L_g moves with the gate length. That column is non-zero for a reason that is not a device sensitivity."
+}

@@ -1,0 +1,199 @@
+{
+  "generated": "2026-08-29T07:52:20",
+  "what": "Tier C: every banked Sentaurus number regenerated from the replay cache with sockets and subprocesses blocked.",
+  "network_blocked": true,
+  "subprocess_blocked": true,
+  "env_stripped": [
+    "SENTAURUS_HOST",
+    "SENTAURUS_PASSWORD",
+    "SENTAURUS_REMOTE_ROOT",
+    "PLINK",
+    "PSCP",
+    "SENTAURUS_GRID"
+  ],
+  "values_compared": 164,
+  "values_bit_identical": 164,
+  "mismatches": [],
+  "pass": true,
+  "wall_seconds": 1.356,
+  "cache": {
+    "entries": 32,
+    "bytes": 149839,
+    "kib": 146.3,
+    "entries_exercised": 16,
+    "entries_superseded_duplicates": 16,
+    "entries_superseded_by_re_extraction": 16,
+    "entries_orphaned": 0,
+    "orphan_keys": [],
+    "entries_requested_but_absent": [],
+    "solver_seconds_banked": 6506.827511199983,
+    "solver_hours_banked": 1.81,
+    "solver_seconds_replayed": 3342.7790964999003,
+    "solver_hours_replayed": 0.93
+  },
+  "rebaseline": {
+    "source": "results/runs/rebaseline_d3_sentaurus.json",
+    "points": [
+      {
+        "point": "nominal",
+        "theta": [
+          0.2,
+          0.5,
+          0.5,
+          0.3333333333333333
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 74.24241134461725,
+        "solver_seconds_replayed": 232.37254089990165
+      },
+      {
+        "point": "t_fe_min",
+        "theta": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 73.81952783991149,
+        "solver_seconds_replayed": 227.6159381000325
+      },
+      {
+        "point": "t_fe_max",
+        "theta": [
+          1.0,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 78.19424549570267,
+        "solver_seconds_replayed": 221.3300767999608
+      },
+      {
+        "point": "rand0",
+        "theta": [
+          0.6369616873214543,
+          0.2697867137638703,
+          0.04097352393619469,
+          0.016527635528529094
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 77.29108585439542,
+        "solver_seconds_replayed": 222.22215659997892
+      },
+      {
+        "point": "rand1",
+        "theta": [
+          0.8132702392002724,
+          0.9127555772777217,
+          0.6066357757671799,
+          0.7294965609839984
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 77.71112831419731,
+        "solver_seconds_replayed": 219.28179290005937
+      },
+      {
+        "point": "rand2",
+        "theta": [
+          0.5436249914654229,
+          0.9350724237877682,
+          0.8158535541215322,
+          0.002738500170148095
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 76.36724464166596,
+        "solver_seconds_replayed": 223.05389820004348
+      },
+      {
+        "point": "rand3",
+        "theta": [
+          0.8574042765875693,
+          0.033585575305464355,
+          0.7296554464299441,
+          0.17565562060255901
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 78.01826477257497,
+        "solver_seconds_replayed": 221.8706419999944
+      },
+      {
+        "point": "rand4",
+        "theta": [
+          0.8631789223498866,
+          0.5414612202490917,
+          0.2997118905373848,
+          0.42268722119765845
+        ],
+        "fields_compared": 16,
+        "mismatched": [],
+        "ss_mV_per_dec": 78.0415210923246,
+        "solver_seconds_replayed": 221.99217939993832
+      },
+      {
+        "point": "rand5",
+        "status": "not-in-banked-file"
+      }
+    ],
+    "solver_seconds_total_replayed": 1789.7392248999095
+  },
+  "cross_check": {
+    "source": "results/runs/cross_check_sentaurus_devsim_d4.json",
+    "probes": 9,
+    "alpha": 0.04,
+    "rows": [
+      {
+        "fom": "ss",
+        "y_matches": true,
+        "d_rel_matches": true,
+        "y_replay": 74.24241134461725
+      },
+      {
+        "fom": "vth_fwd",
+        "y_matches": true,
+        "d_rel_matches": true,
+        "y_replay": 0.8177892241282716
+      },
+      {
+        "fom": "vth_rev",
+        "y_matches": true,
+        "d_rel_matches": true,
+        "y_replay": -1.2435256614697865
+      },
+      {
+        "fom": "i_leak",
+        "y_matches": true,
+        "d_rel_matches": true,
+        "y_replay": 4.111801369620872e-11
+      },
+      {
+        "fom": "g_lo",
+        "y_matches": true,
+        "d_rel_matches": true,
+        "y_replay": 6.1847161853279965e-09
+      },
+      {
+        "fom": "g_hi",
+        "y_matches": true,
+        "d_rel_matches": true,
+        "y_replay": 0.0008673826320039775
+      },
+      {
+        "fom": "dg_dvth",
+        "y_matches": true,
+        "d_rel_matches": true,
+        "y_replay": 2.0303077199908882e-05
+      }
+    ],
+    "sign_agreement_replayed": 0.25,
+    "sign_agreement_banked": 0.25
+  }
+}

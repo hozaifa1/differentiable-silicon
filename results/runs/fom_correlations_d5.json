@@ -1,0 +1,147 @@
+{
+ "generated": "2026-08-28T13:05:47",
+ "n_devices": 192,
+ "objective": "balanced CE, SNN_TRAIN_MODE=frozen",
+ "cloud": "manifold_cloud_d4.json",
+ "losses_from": "v6_manifold_control_d5.json",
+ "loss_min": 1.022077998151109,
+ "loss_max": 1.526320550339618,
+ "correlations": [
+  {
+   "quantity": "ss",
+   "label": "subthreshold slope",
+   "pearson_r": 0.36183098527550284,
+   "r2": 0.13092166190544116,
+   "spearman": 0.2765018446680954,
+   "log10": false,
+   "n": 192
+  },
+  {
+   "quantity": "vth_fwd",
+   "label": "forward threshold",
+   "pearson_r": -0.3816070388070467,
+   "r2": 0.14562393206708285,
+   "spearman": -0.41022332691316504,
+   "log10": false,
+   "n": 192
+  },
+  {
+   "quantity": "vth_rev",
+   "label": "reverse threshold",
+   "pearson_r": -0.3092005878916869,
+   "r2": 0.09560500355256481,
+   "spearman": -0.24793322572769444,
+   "log10": false,
+   "n": 192
+  },
+  {
+   "quantity": "i_leak",
+   "label": "leakage current",
+   "pearson_r": 0.3428890566096393,
+   "r2": 0.11757290514264843,
+   "spearman": 0.37382334590239547,
+   "log10": true,
+   "n": 192
+  },
+  {
+   "quantity": "g_lo",
+   "label": "low conductance",
+   "pearson_r": 0.3465303300424098,
+   "r2": 0.12008326963930147,
+   "spearman": 0.3792437538995741,
+   "log10": true,
+   "n": 192
+  },
+  {
+   "quantity": "g_hi",
+   "label": "high conductance",
+   "pearson_r": 0.16405846408062544,
+   "r2": 0.026915179636493865,
+   "spearman": 0.16401608659089062,
+   "log10": true,
+   "n": 192
+  },
+  {
+   "quantity": "dg_dvth",
+   "label": "conductance slope",
+   "pearson_r": 0.17612615031978093,
+   "r2": 0.03102042082646607,
+   "spearman": 0.20528714429102354,
+   "log10": true,
+   "n": 192
+  },
+  {
+   "quantity": "mw",
+   "label": "MEMORY WINDOW",
+   "pearson_r": -0.10754287665333824,
+   "r2": 0.011565470318875124,
+   "spearman": -0.08530233567533843,
+   "log10": false,
+   "n": 192
+  },
+  {
+   "quantity": "g_ratio",
+   "label": "conductance ratio",
+   "pearson_r": -0.35135373190429686,
+   "r2": 0.12344944492307651,
+   "spearman": -0.38080866994004836,
+   "log10": true,
+   "n": 192
+  },
+  {
+   "quantity": "beta",
+   "label": "membrane decay",
+   "pearson_r": -0.3365891701729036,
+   "r2": 0.11329226947768384,
+   "spearman": -0.3735622439844832,
+   "log10": false,
+   "n": 192
+  },
+  {
+   "quantity": "g_min",
+   "label": "min conductance",
+   "pearson_r": 0.3465303300424098,
+   "r2": 0.12008326963930147,
+   "spearman": 0.3792437538995741,
+   "log10": true,
+   "n": 192
+  },
+  {
+   "quantity": "g_max",
+   "label": "max conductance",
+   "pearson_r": 0.16405846408062544,
+   "r2": 0.026915179636493865,
+   "spearman": 0.16401608659089062,
+   "log10": true,
+   "n": 192
+  },
+  {
+   "quantity": "th_th",
+   "label": "firing threshold",
+   "pearson_r": -0.06090344010345605,
+   "r2": 0.003709229016435259,
+   "spearman": -0.16401608659089062,
+   "log10": false,
+   "n": 192
+  },
+  {
+   "quantity": "sig_w",
+   "label": "weight noise",
+   "pearson_r": 0.13358035714274374,
+   "r2": 0.01784371181438297,
+   "spearman": 0.2260515286330467,
+   "log10": false,
+   "n": 192
+  }
+ ],
+ "best_single": {
+  "quantity": "vth_fwd",
+  "label": "forward threshold",
+  "pearson_r": -0.3816070388070467,
+  "r2": 0.14562393206708285,
+  "spearman": -0.41022332691316504,
+  "log10": false,
+  "n": 192
+ },
+ "r2_all_seven_foms_linear": 0.354398993960774
+}

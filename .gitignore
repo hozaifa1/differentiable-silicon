@@ -48,11 +48,22 @@ results/figures/
 # file inside one cannot be re-included. Exclude the contents instead.
 results/runs/*
 !results/runs/provenance.jsonl
-!results/runs/cross_check*.json
-# The D3 measurements the docs quote by name. Without these the writeup cites
-# files that are not in the repository.
-!results/runs/rebaseline_d3_*.json
-!results/runs/snn_calibration_d3.json
+# EVERY top-level measurement JSON, not a hand-maintained list.
+#
+# CHANGED 2026-08-29 (D6). The list used to name the D3 files one by one, with a
+# comment saying "without these the writeup cites files that are not in the
+# repository". The comment was right and the list was never extended: by D6,
+# ELEVEN artefacts that D4, D5, D6 and the README cite by name -- the H-ablation,
+# the budget sweep, the FoM correlations, the corrected V6 control, the manifold
+# cloud, the container smoke test, the Tier C replay, the provenance audit and
+# both figure banks -- were sitting untracked while the documents pointed at
+# them. A rule nobody remembers to extend is a rule that fails quietly.
+#
+# So: all of them, by shape rather than by name. These are the outputs of the
+# measurement scripts in scripts/ -- 21 files, 396 KiB in total -- and the bulk
+# this exclusion exists for (plots, .tdr, .plt, per-probe dumps) is not JSON at
+# the top level of results/runs/.
+!results/runs/*.json
 !results/runs/*/
 results/runs/*/*
 !results/runs/*/steps.jsonl

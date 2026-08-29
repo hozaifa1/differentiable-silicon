@@ -1,0 +1,202 @@
+{
+  "generated": "2026-08-29T08:16:34",
+  "log": "results/runs/provenance.jsonl",
+  "evaluations": 5749,
+  "distinct_design_points": 1763,
+  "by_backend": {
+    "devsim": {
+      "calls": 5509,
+      "distinct_points": 1705,
+      "solver_hours": 31.233
+    },
+    "mock": {
+      "calls": 203,
+      "distinct_points": 119,
+      "solver_hours": 0.016
+    },
+    "sentaurus": {
+      "calls": 37,
+      "distinct_points": 16,
+      "solver_hours": 2.126
+    }
+  },
+  "unconverged_evaluations": 19,
+  "span": "2026-08-26 14:05 -> 2026-08-29 08:09",
+  "span_note": "Starts 2026-08-26, not D1: the D3 extraction rewrite re-keyed every cache entry and the log was restarted with the cache it describes.",
+  "flagship": {
+    "source": "results/runs/flagship-d4-fixed/steps.jsonl",
+    "steps": [
+      {
+        "step": 0,
+        "hash": "4af7ee1f2d4c7ba897bbd222546ec8fdff2faeb15360e93eff483dd00f17e1ab",
+        "backends": [
+          "devsim",
+          "mock"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.3995774659049987,
+        "real_solver": true
+      },
+      {
+        "step": 1,
+        "hash": "e0020969800d57b97429d57c3fe03283cebd273ec7ee4338739b526f3c37f809",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.2934729294818577,
+        "real_solver": true
+      },
+      {
+        "step": 2,
+        "hash": "cf9447d470283218725caf42697416be54ec81f885328365dcf9f36163714d94",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.1608620207630163,
+        "real_solver": true
+      },
+      {
+        "step": 3,
+        "hash": "665dc7f55bdc0a291507b9e26e2ecc6feb50307c3556be97c96cb47561fb5bce",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0738356570235257,
+        "real_solver": true
+      },
+      {
+        "step": 4,
+        "hash": "bf426b49073cfe5f0e8795b97acc5ebfe83476304379f94fd4500467cc4c77c5",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0568168343271707,
+        "real_solver": true
+      },
+      {
+        "step": 5,
+        "hash": "e1820162baada3a910fbd780017eca51d101ef9d17c51d4b4d09877a03169f36",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0387183127475839,
+        "real_solver": true
+      },
+      {
+        "step": 6,
+        "hash": "e1820162baada3a910fbd780017eca51d101ef9d17c51d4b4d09877a03169f36",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0387183127475839,
+        "real_solver": true
+      },
+      {
+        "step": 7,
+        "hash": "e1820162baada3a910fbd780017eca51d101ef9d17c51d4b4d09877a03169f36",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0387183127475839,
+        "real_solver": true
+      },
+      {
+        "step": 8,
+        "hash": "504213f2537c233b0c42d60b7fdf52773fae1360fd95b34f6ff0b2a16f53d83e",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0331190087059798,
+        "real_solver": true
+      },
+      {
+        "step": 9,
+        "hash": "57c81e1a073f5bc129704739aa07efbfcfa25e642eb5d3a5cfccd8cb7e56a57e",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0231382630851245,
+        "real_solver": true
+      },
+      {
+        "step": 10,
+        "hash": "57c81e1a073f5bc129704739aa07efbfcfa25e642eb5d3a5cfccd8cb7e56a57e",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0231382630851245,
+        "real_solver": true
+      },
+      {
+        "step": 11,
+        "hash": "57c81e1a073f5bc129704739aa07efbfcfa25e642eb5d3a5cfccd8cb7e56a57e",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0231382630851245,
+        "real_solver": true
+      },
+      {
+        "step": 12,
+        "hash": "ee1b92e9a3a80e31b0c2bb9b8ffffd6b0fcd5bb7b9f4e16372f40c2e5b78d8f7",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0176659660226453,
+        "real_solver": true
+      },
+      {
+        "step": 13,
+        "hash": "ee1b92e9a3a80e31b0c2bb9b8ffffd6b0fcd5bb7b9f4e16372f40c2e5b78d8f7",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0176659660226453,
+        "real_solver": true
+      },
+      {
+        "step": 14,
+        "hash": "ee1b92e9a3a80e31b0c2bb9b8ffffd6b0fcd5bb7b9f4e16372f40c2e5b78d8f7",
+        "backends": [
+          "devsim"
+        ],
+        "step_backend": "devsim",
+        "backend_agrees": true,
+        "loss": 1.0176659660226453,
+        "real_solver": true
+      }
+    ],
+    "steps_missing_from_log": [],
+    "steps_served_only_by_mock": [],
+    "steps_whose_own_backend_is_absent_from_the_log": []
+  },
+  "mock_only_design_points": 57,
+  "pass": true
+}

@@ -93,8 +93,13 @@ All five images are on GHCR and public. Pin by digest, not by tag — `latest` i
 ### Running an optimisation
 
 ```bash
-python scripts/run_flagship.py --backend devsim --d 3 --max-oracle-calls 45 --theta0 0.20,0.40,0.30
+python scripts/run_flagship.py --backend devsim --d 4 --max-oracle-calls 120 --trust-radius 0.08 --theta0 0.05,0.80,0.90,0.70 --tag flagship
 ```
+
+That is the exact command behind every headline number here: balanced
+cross-entropy **1.3996 -> 1.0177** and accuracy **0.250 -> 0.688** in **64
+solver calls**, banked at `results/runs/flagship-d4-fixed/`. `--d 3` is refused
+on purpose -- it exposes P_r and E_c, which are locked material constants.
 
 The run starts from a deliberately poor corner of the design box — a thin, weakly polarised film
 whose memory window is too small to separate the two conductance states — and is capped by solver
@@ -103,12 +108,25 @@ solver is bought by the call and a budgeted run is one you can start before bed.
 `steps.jsonl` and `result.json` as it goes, and the per-step trust-region ratios in that file are
 validation item V5.
 
-**Tier C — regenerates every Sentaurus figure with no license and no network.** `results/cache/`
-is a content-addressed replay of every Sentaurus call ever made, populated as a side effect of every
-run rather than reconstructed at the end.
+**Tier C — regenerates every Sentaurus number with no license and no network.**
+`results/cache/sentaurus/` is a content-addressed replay of every Sentaurus call ever made,
+populated as a side effect of every run rather than reconstructed at the end.
 
 ```bash
-ORACLE_BACKEND=replay uv run python -m diffsilicon.race
+uv run python scripts/tier_c_replay_d6.py
+```
+
+This is checked, not claimed. The script blocks `socket` and `subprocess` and strips every
+`SENTAURUS_*` variable from the environment before it touches project code, then regenerates
+**164 of 164 float64 values bit-identically** — every figure of merit in
+`rebaseline_d3_sentaurus.json` and every entry of the V4 cross-solver Jacobian — in **1.4 s**,
+standing in for **0.93 h** of commercial-solver time. If anything came off the solver rather than
+the cache it fails with a traceback instead of returning a number.
+
+Figures 3 and 4 replay the same way, from `results/cache/devsim/`, with no solver call:
+
+```bash
+uv run python scripts/fig3_hysteresis_descent.py && uv run python scripts/fig4_spike_raster.py
 ```
 
 **Tier D — bring your own license.** See [`docs/T1_CONTAINER.md`](docs/T1_CONTAINER.md) and
@@ -124,10 +142,26 @@ that document explains why.
   that were wrong underneath it: a body that punched through, a stiff equation the device
   did not need, three silent traps in DEVSIM's expression language, and a classifier
   that was never trained.
+- [`docs/D3_RECALIBRATION.md`](docs/D3_RECALIBRATION.md) — locking the material, and
+  wiring the device under the thesis' own validated LSNN instead of a network invented
+  for this project.
+- [`docs/D3_FINDINGS.md`](docs/D3_FINDINGS.md) · [`docs/D4_FINDINGS.md`](docs/D4_FINDINGS.md)
+  · [`docs/D5_FINDINGS.md`](docs/D5_FINDINGS.md) · [`docs/D6_FINDINGS.md`](docs/D6_FINDINGS.md)
+  — the daily measurement logs, including the corrections. D4 section 6 is superseded by
+  D5 and carries a banner saying so.
 - [`docs/T1_CONTAINER.md`](docs/T1_CONTAINER.md) — why the flagship Tesseract runs
   uncontainerised, and what the driver has to survive on a csh-only CentOS 7 host.
 - [`docs/UPSTREAM.md`](docs/UPSTREAM.md) — two bugs found by using the toolkit rather
   than reading it, with the motivating case in this repository.
+
+## Figures
+
+| | |
+|---|---|
+| [`fig1_pca_manifold`](docs/figures/fig1_pca_manifold.png) | what a device can hand the network. Two principal directions carry **90.5%** of the variation across 192 devices; the freely optimised phi\* sits **13.5** typical device-spacings off that sheet, and wants a ferroelectric memory whose two states conduct alike |
+| [`fig2_budget_crossover`](docs/figures/fig2_budget_crossover.png) | sample efficiency against solver calls. Gradient descent is the **only** arm that converts extra budget into performance — random search is flat to six decimal places from 12 calls to 48 |
+| [`fig3_hysteresis_descent`](docs/figures/fig3_hysteresis_descent.png) | the device moving. The Id–Vg loop at every accepted step: memory window **0.415 → 0.576 V**, bought by giving up subthreshold slope, **71 → 97 mV/dec** |
+| [`fig4_spike_raster`](docs/figures/fig4_spike_raster.png) | what that does to the classifier. The layer does **not** fire more (rate 0.4344 → 0.4572, per-neuron correlation 0.9999) — **one spike in eleven moves**, and that is enough to unstick a readout that answered one class for all sixteen beats |
 
 ## Status
 
@@ -140,7 +174,9 @@ that document explains why.
 | Open oracle (G2) | DEVSIM converges a pn diode, 5.9 decades of rectification |
 | Open oracle (G5) | **passed** — hysteretic Id–Vg, memory window **0.394 V** against a 0.1 V gate, ~36 s per design point |
 | Containers (G3) | all five build and push to GHCR from CI |
-| Tests | 99, lint clean |
+| Tier C (Sentaurus replay) | **verified** — 164 of 164 float64 values bit-identical, with sockets and subprocesses blocked; zero orphan cache entries |
+| Provenance (G10) | 5,749 forward evaluations logged with backend and input hash; all 15 flagship steps present, a real solver wrote every one |
+| Tests | **155**, lint clean |
 
 ## License
 

@@ -1,0 +1,205 @@
+{
+ "generated": "2026-08-28T16:42:09",
+ "passed": 22,
+ "total": 22,
+ "checks": [
+  {
+   "tesseract": "sentaurus-fefet",
+   "check": "module imports",
+   "backend": "-",
+   "ok": true,
+   "seconds": 2.18,
+   "detail": "ok",
+   "error": null
+  },
+  {
+   "tesseract": "sentaurus-fefet",
+   "check": "InputSchema / OutputSchema build",
+   "backend": "-",
+   "ok": true,
+   "seconds": 0.0,
+   "detail": "4 in, 10 out",
+   "error": null
+  },
+  {
+   "tesseract": "sentaurus-fefet",
+   "check": "apply returns finite figures of merit",
+   "backend": "replay",
+   "ok": true,
+   "seconds": 0.21,
+   "detail": "ss=74.24, vth_fwd=0.8178, vth_rev=-1.244, i_leak=4.112e-11, converged=1",
+   "error": null
+  },
+  {
+   "tesseract": "sentaurus-fefet",
+   "check": "abstract_eval matches apply",
+   "backend": "replay",
+   "ok": true,
+   "seconds": 0.0,
+   "detail": "10 leaves agree",
+   "error": null
+  },
+  {
+   "tesseract": "devsim-fefet",
+   "check": "module imports",
+   "backend": "-",
+   "ok": true,
+   "seconds": 0.01,
+   "detail": "ok",
+   "error": null
+  },
+  {
+   "tesseract": "devsim-fefet",
+   "check": "InputSchema / OutputSchema build",
+   "backend": "-",
+   "ok": true,
+   "seconds": 0.0,
+   "detail": "4 in, 10 out",
+   "error": null
+  },
+  {
+   "tesseract": "devsim-fefet",
+   "check": "apply returns finite figures of merit",
+   "backend": "devsim",
+   "ok": true,
+   "seconds": 0.27,
+   "detail": "ss=82.14, vth_fwd=0.5983, vth_rev=0.07039, i_leak=1.302e-11, converged=1",
+   "error": null
+  },
+  {
+   "tesseract": "devsim-fefet",
+   "check": "abstract_eval matches apply",
+   "backend": "devsim",
+   "ok": true,
+   "seconds": 0.01,
+   "detail": "10 leaves agree",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "module imports",
+   "backend": "-",
+   "ok": true,
+   "seconds": 0.02,
+   "detail": "ok",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "InputSchema / OutputSchema build",
+   "backend": "-",
+   "ok": true,
+   "seconds": 0.0,
+   "detail": "4 in, 10 out",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "apply proxies to the oracle",
+   "backend": "mock",
+   "ok": true,
+   "seconds": 0.94,
+   "detail": "ss=83.06, vth_fwd=0.5248, i_leak=1.11e-10, converged=1",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "abstract_eval matches apply",
+   "backend": "mock",
+   "ok": true,
+   "seconds": 0.0,
+   "detail": "10 leaves agree",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "jacobian is 7 x D and finite",
+   "backend": "mock",
+   "ok": true,
+   "seconds": 0.92,
+   "detail": "shape (7, 4), |J|_F=25.65",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "vjp equals J^T applied to the cotangent",
+   "backend": "mock",
+   "ok": true,
+   "seconds": 0.82,
+   "detail": "J^T 1 = [  7.1432 -19.1967  12.5043   8.9293]",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "jvp equals J applied to the tangent",
+   "backend": "mock",
+   "ok": true,
+   "seconds": 0.82,
+   "detail": "J 1 finite, 7 rows",
+   "error": null
+  },
+  {
+   "tesseract": "adjoint-shim",
+   "check": "a repeat vjp costs zero solver calls",
+   "backend": "mock",
+   "ok": true,
+   "seconds": 0.69,
+   "detail": "0 extra probes (total 9)",
+   "error": null
+  },
+  {
+   "tesseract": "snn-lif-ecg",
+   "check": "module imports",
+   "backend": "-",
+   "ok": true,
+   "seconds": 3.1,
+   "detail": "ok",
+   "error": null
+  },
+  {
+   "tesseract": "snn-lif-ecg",
+   "check": "InputSchema / OutputSchema build",
+   "backend": "-",
+   "ok": true,
+   "seconds": 0.0,
+   "detail": "8 in, 3 out",
+   "error": null
+  },
+  {
+   "tesseract": "snn-lif-ecg",
+   "check": "apply runs the network",
+   "backend": "frozen",
+   "ok": true,
+   "seconds": 0.68,
+   "detail": "loss=1.1, spikes=0.4478, accuracy=0.5",
+   "error": null
+  },
+  {
+   "tesseract": "snn-lif-ecg",
+   "check": "abstract_eval matches apply",
+   "backend": "frozen",
+   "ok": true,
+   "seconds": 0.0,
+   "detail": "3 leaves agree",
+   "error": null
+  },
+  {
+   "tesseract": "snn-lif-ecg",
+   "check": "vjp returns dL/dphi for all five",
+   "backend": "frozen",
+   "ok": true,
+   "seconds": 1.29,
+   "detail": "dL/dphi = [-3.3994  0.      0.      0.3737  3.6544]",
+   "error": null
+  },
+  {
+   "tesseract": "snn-lif-ecg",
+   "check": "jvp runs",
+   "backend": "frozen",
+   "ok": true,
+   "seconds": 1.31,
+   "detail": "dL along 1 = 0.628715",
+   "error": null
+  }
+ ]
+}
