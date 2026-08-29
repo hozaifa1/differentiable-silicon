@@ -13,6 +13,7 @@ inverted; D1 corrected it, and this is the test that keeps it corrected.
 """
 
 import math
+import pathlib
 
 import numpy as np
 import pytest
@@ -26,6 +27,31 @@ from diffsilicon.oracle_devsim import (
 )
 from diffsilicon.shared.contract import DEFAULT_VG_GRID, NVG, make_oracle_input
 from diffsilicon.shared.design import get_design, nominal_theta
+
+
+def _has_calibration() -> bool:
+    """Is there a device on this machine to render a deck against?
+
+    The calibration and the deck are one person's unpublished thesis work and are
+    gitignored, so CI has neither and never will. Tests that only need algebra or
+    a unit conversion must run everywhere; tests that need an actual device skip.
+    Skipping is the honest outcome here -- the alternative is a suite that is
+    green on one laptop and red everywhere else, which is what happened.
+    """
+    from diffsilicon.t1_driver import T1Config
+
+    t1 = pathlib.Path(__file__).resolve().parents[1] / "t1"
+    return (
+        not T1Config().missing_calibration()
+        and (t1 / "sdevice_fefet_idvg.cmd").is_file()
+        and (t1 / "sdevice_fefet_idvg.par").is_file()
+    )
+
+
+needs_calibration = pytest.mark.skipif(
+    not _has_calibration(),
+    reason="no T1 device calibration or deck on this machine (both are gitignored)",
+)
 
 
 # ---------------------------------------------------------------- Miller algebra
@@ -76,6 +102,7 @@ def test_the_three_chosen_constants_are_in_physical_ranges():
 
 
 # ------------------------------------------------------------- the T1 deck tokens
+@needs_calibration
 def test_the_t1_deck_renders_for_every_design_vector():
     from pathlib import Path
 
@@ -93,6 +120,7 @@ def test_the_t1_deck_renders_for_every_design_vector():
         render_template(par, v)
 
 
+@needs_calibration
 def test_the_fixed_slab_remap_preserves_the_coercive_voltage():
     """eps and Ec scale by RECIPROCAL factors. Using one for both renders fine,
     runs fine, and silently multiplies the memory window by (t_slab/t_fe)^2.
@@ -209,6 +237,7 @@ def test_the_mesh_deck_renders_with_no_leftover_tokens():
     render_template(tmpl.read_text(encoding="utf-8"), v)  # raises on a leftover
 
 
+@needs_calibration
 def test_rebuilding_the_mesh_turns_the_remap_OFF():
     """The double-count trap, and it is silent.
 

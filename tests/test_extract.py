@@ -28,9 +28,25 @@ REL_TOL = {"ss": 0.5, "i_leak": 0.5, "g_lo": 0.5, "g_hi": 0.5, "dg_dvth": 0.5}
 VTH_ABS_TOL_V = 1e-3
 
 
+# THIS FILE DELIBERATELY DEFEATS THE MEASUREMENT FLOOR, and it is the only place
+# that may.
+#
+# `i_floor` defaults to 1e-16 A, because on a real solver curve everything below
+# that is numerical drift and reading a slope out of it made the whole objective
+# irreproducible (see `shared/extract.py`). But these tests measure a DIFFERENT
+# property: whether the extraction's arithmetic reproduces a closed-form answer
+# on a perfectly clean, exactly log-linear curve. The mock's leak current runs
+# down to ~2e-16 A over the d=5 box, so the floor would distort the reference
+# itself and the test would be checking the floor rather than the extraction --
+# measured, i_leak came out 6.9% off against a 0.5% tolerance.
+#
+# Nothing that touches a real solver curve may do this.
+ANALYTIC_FLOOR = 1e-20
+
+
 def _extract(theta, vds=None):
     vds = CC.v_ds if vds is None else vds
-    cfg = extraction_config(theta)
+    cfg = extraction_config(theta)._replace(i_floor=ANALYTIC_FLOOR)
     curves = id_vg_curves(theta, DEFAULT_VG_GRID, vds)
     return extract_foms(VG, curves[0], curves[1], cfg, vds), analytic_foms(theta, cfg, vds)
 

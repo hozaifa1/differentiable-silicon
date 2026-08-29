@@ -212,8 +212,16 @@ class LSNNNet(torch.nn.Module):
             "adapt_decay", torch.tensor(decay(dt, a["tau_adapt_s"]), dtype=DTYPE)
         )
 
-    def forward(self, x, phi: dict[str, torch.Tensor], seed: int = 0, smooth: bool = False):
+    def forward(self, x, phi: dict[str, torch.Tensor], seed: int = 0,
+                smooth: bool = False, spike_log: list | None = None):
         """x: (B, T, n_in). Returns (logits, mean spikes per neuron per timestep).
+
+        `spike_log`, if given, is appended with the (B, H) spike tensor of every
+        timestep. ADDED 2026-08-29 (D6) for the raster figure, and deliberately
+        an out-parameter rather than a second return value: the return signature
+        is what `tesseract_api` and every test call, and a figure has no business
+        changing it. Default None, in which case this method is byte-identical in
+        behaviour to what it was -- the flagship numbers it produced still stand.
 
         NOTE A DIFFERENCE FROM `LIFNet`, because it changes the scale of the
         energy term. `LIFNet` returns spikes/(B*T), which sums over every neuron
@@ -278,6 +286,8 @@ class LSNNNet(torch.nn.Module):
             adapt = self.adapt_decay * adapt + s * self.alif_mask
 
             spikes = spikes + s.sum()
+            if spike_log is not None:
+                spike_log.append(s.detach().clone())
             lp = self.lp_decay * lp + (1.0 - self.lp_decay) * s
             out = out + lp @ self.readout
 

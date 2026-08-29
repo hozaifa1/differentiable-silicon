@@ -50,6 +50,15 @@ this project is aligned with reports (45-75 mV/dec).
 
 I_leak is likewise no longer extrapolated. See `extract_branch`.
 
+RAISED THE MEASUREMENT FLOOR 2026-08-27 (D4)
+--------------------------------------------
+`_I_FLOOR` went from 1e-20 to 1e-16. That one line is what made the objective
+reproducible. At 1e-20 the extraction was reading slopes out of the deep-off
+region of the sweep, where the solver reports ~1e-19 A and the answer is
+numerical drift rather than a current -- and a design change of ten femtometres
+moved the memory window by up to 0.239 V. The whole argument, and the two
+measured bounds that fix the value, are on `_I_FLOOR` below.
+
 All functions here are pure and jit-safe.
 """
 
@@ -64,10 +73,66 @@ jax.config.update("jax_enable_x64", True)
 
 __all__ = ["ExtractionConfig", "FoMs", "extract_foms", "extract_branch"]
 
-# Softening constant for log10 of a current that may legitimately touch zero in
-# a solver dump. log10(sqrt(I^2 + FLOOR^2)) is smooth everywhere and agrees with
-# log10(I) to machine precision for any current this problem ever sees.
-_I_FLOOR = 1e-20
+# THE MEASUREMENT FLOOR. Currents below this carry no information and the
+# extraction must not read any out of them.
+#
+# RAISED 2026-08-27 (D4) from 1e-20 to 1e-16, and this is the single change that
+# made the objective reproducible. Do not lower it without re-running the
+# measurement below.
+#
+# WHAT IT WAS FOR. Originally this was only a softening constant, so that
+# log10(sqrt(I^2 + FLOOR^2)) stays finite and differentiable if a solver dump
+# puts a current at exactly zero. At 1e-20 it agreed with log10(I) to machine
+# precision "for any current this problem ever sees" -- which was true, and was
+# exactly the problem: it faithfully preserved numbers that mean nothing.
+#
+# WHAT WENT WRONG. The sweep runs to -3.50 V, where the device is fully off and
+# the solver reports currents around 1e-19 A. That is not a measurement and it
+# is not even arithmetic: the electron density there is ~1e-2 cm^-3 against 1e20
+# in the contacts, which is sixty decades of dynamic range in one matrix against
+# the sixteen that double precision carries. Whatever comes back is drift.
+#
+# Measured, at the design point where the D4 flagship stalled. Nudging the design
+# vector by 1e-12 in normalised units -- about TEN FEMTOMETRES of film thickness,
+# a hundredth of the width of an atom:
+#
+#   * every curve point that moved had |I| <= 4.5e-19 A. NOTHING above that
+#     moved at all, at any point on either branch.
+#   * with the floor at 1e-20 the reverse-branch threshold jumped 23 mV, the
+#     memory window jumped by up to 0.239 V across the banked devices, and the
+#     loss jumped by 0.0056 -- three times the entire descent the flagship
+#     achieved. The steepness-weighted subthreshold window is free to put weight
+#     on the deep-off region, because at 1e-20 that region still has a shape and
+#     therefore a slope.
+#   * I_leak, g_lo, g_hi and dg_dvth moved by 1e-16 or less. The instability was
+#     ENTIRELY in the two threshold voltages, and almost entirely in the reverse
+#     one.
+#
+# HOW THIS VALUE WAS CHOSEN. Both bounds are measured, on seven banked devices:
+#
+#   worst memory-window jump under a 1e-12 nudge, and the systematic drift the
+#   floor itself puts into I_leak:
+#
+#       floor     worst |d MW|      I_leak drift
+#       1e-20      2.392e-01 V         --
+#       1e-18      3.100e-06 V       3.8e-04
+#       1e-17      4.491e-06 V       1.1e-03
+#       1e-16      1.028e-06 V       4.9e-03
+#       1e-15      6.267e-08 V       3.6e-02
+#
+#   * ABOVE the noise. 1e-16 is two hundred times the 4.5e-19 A ceiling where the
+#     drift lives, which is why the jump collapses by five orders of magnitude.
+#   * BELOW the signal. The smallest genuine leak current anywhere in the design
+#     box is 3.1e-15 A (rand1), which is thirty-one times this floor. Going one
+#     decade higher, to 1e-15, buys another factor of sixteen in stability and
+#     costs 3.6% of I_leak on those devices -- and I_leak sets the membrane
+#     decay, so that is not a trade worth making.
+#   * And it is still a hundred times below what any real parameter analyser can
+#     measure, so nothing a measurement could have seen is being discarded.
+#
+# A remaining 1e-6 V of jitter in a memory window of ~0.5 V is two parts in a
+# million, against a loss signal of ~2e-3. That is no longer the limiting term.
+_I_FLOOR_DEFAULT = 1e-16
 
 
 class ExtractionConfig(NamedTuple):
@@ -79,6 +144,16 @@ class ExtractionConfig(NamedTuple):
     sigma_v: float = 0.025  # V -- width of the local-polynomial window; see _wlq_at
     sigma_v_grid_frac: float = 1.0  # x grid spacing -- floor under sigma_v; see _local_window
     poly_order: int = 9  # degree of that local polynomial; see _wlq_at
+    #: A -- the measurement floor. See `_I_FLOOR_DEFAULT` for the whole argument
+    #: and the two measured bounds that fix it. It is a field rather than a
+    #: constant because the two things it trades off pull in opposite
+    #: directions, and one caller needs the other end: the analytic accuracy
+    #: test in tests/test_extract.py checks the extraction's ARITHMETIC against
+    #: a closed-form reference whose leak current runs down to ~2e-16 A, which
+    #: is below the floor by construction. That test measures a different
+    #: property -- exactness on a clean curve -- and must set its own floor.
+    #: Nothing that touches a real solver curve should.
+    i_floor: float = _I_FLOOR_DEFAULT
     v_leak: float = 0.30  # V -- leak-device bias; FROZEN, see config/circuit.yaml
     i_crit_per_wl: float = 100e-9  # A -- constant-current V_th criterion, x W/L_g
     w_dev_nm: float = 100.0  # nm
@@ -95,11 +170,22 @@ class FoMs(NamedTuple):
     g_lo: jnp.ndarray  # S
     g_hi: jnp.ndarray  # S
     dg_dvth: jnp.ndarray  # S/V, positive-by-convention magnitude
+    #: 1.0 if BOTH thresholds were found inside the swept window, else 0.0.
+    #: Defaulted so the seven-positional-argument form still constructs.
+    vth_in_range: jnp.ndarray = jnp.asarray(1.0)
 
 
-def _log10_soft(i: jnp.ndarray) -> jnp.ndarray:
-    """Smooth log10 of a current, finite and differentiable at I = 0."""
-    return 0.5 * jnp.log10(i * i + _I_FLOOR * _I_FLOOR)
+def _log10_soft(i: jnp.ndarray, i_floor: float = _I_FLOOR_DEFAULT) -> jnp.ndarray:
+    """Smooth log10 of a current, finite and differentiable at I = 0, and FLAT
+    below the measurement floor.
+
+    The parameter is `i_floor` and not `floor` on purpose:
+    `test_no_argmax_or_threshold_crossing_in_the_source` bans the bare name
+    `floor` from this module, because `jnp.floor` would put a staircase in the
+    derivative. The guard is deliberately crude and it is right to be -- a
+    variable named `floor` is not worth weakening it for.
+    """
+    return 0.5 * jnp.log10(i * i + i_floor * i_floor)
 
 
 def _softmax_weights(z: jnp.ndarray) -> jnp.ndarray:
@@ -189,7 +275,7 @@ def _wls_subthreshold(
 
     Returns (SS in V/dec, weighted mean V_g, weighted mean log10 Id).
     """
-    lg10 = _log10_soft(idv)
+    lg10 = _log10_soft(idv, cfg.i_floor)
     w = _subthreshold_weights(vg, lg10, cfg)
 
     vbar = jnp.sum(w * vg)
@@ -272,7 +358,7 @@ def _wlq_at(
     sigma = _local_window(vg, cfg)
     u = (vg - v_centre) / sigma
     w = _softmax_weights(-(u**2) / 2.0)
-    y = _log10_soft(idv)
+    y = _log10_soft(idv, cfg.i_floor)
 
     X = jnp.stack([u**k for k in range(cfg.poly_order + 1)], axis=1)  # (N, p+1)
     XtW = X.T * w  # (p+1, N)
@@ -297,6 +383,41 @@ def extract_branch(
 
     i_crit = cfg.i_crit_per_wl * cfg.w_dev_nm / cfg.l_g_nm
     vth = vbar + ss_v * (jnp.log10(i_crit) - lbar)
+
+    # THE THRESHOLD MUST LIE INSIDE THE VOLTAGES WE ACTUALLY SWEPT.
+    #
+    # The line above is an extrapolation from the fit centre out to the critical
+    # current. On a device with a real subthreshold region that lands inside the
+    # sweep and is exactly what you want. On a device that never switches off it
+    # does not, and nothing used to stop it: measured 2026-08-26, one device in
+    # eight returned vth_fwd = +4.16 V from a sweep ending at +1.50 V, giving a
+    # memory window of 4.44 V -- larger than the entire 5 V sweep could support.
+    # That device reads SS = 431 mV/dec, i.e. it has no off-region at all, so
+    # there was no threshold in there to find and the fit answered from a region
+    # where no current was ever measured.
+    #
+    # This is NOT the D3 bug (a fixed current level landing in the leakage
+    # floor); that one is fixed and this does not touch it. It is the separate
+    # question of whether the answer is inside the data.
+    #
+    # THE VALUE IS LEFT EXACTLY AS IT IS. Only a FLAG is raised.
+    #
+    # Clamping the threshold to the sweep was tried first and is wrong here.
+    # `test_no_argmax_or_threshold_crossing_in_the_source` bans clip/where/argmax
+    # from this module on purpose: every one of them reintroduces a
+    # piecewise-constant derivative in theta, which is the exact property this
+    # whole module exists to avoid. A clamp would have been flat in theta outside
+    # the window and would have put a kink in the path for every device, to
+    # sanitise the few that are already being thrown away.
+    #
+    # So the flag carries the whole job. `run_oracle` folds it into `converged`,
+    # and a design point that is not converged is REJECTED upstream rather than
+    # patched up here. Nothing downstream should ever consume a threshold from a
+    # point whose flag is 0, so the raw value costs nothing and the gradient path
+    # stays smooth for every point that IS usable.
+    v_lo = jnp.min(vg)
+    v_hi = jnp.max(vg)
+    vth_in_range = ((vth >= v_lo) & (vth <= v_hi)).astype(vth.dtype)
 
     # I_leak is READ OFF THE CURVE at V_leak with the same local-polynomial fit
     # used at V_read, not extrapolated down the subthreshold line.
@@ -326,6 +447,7 @@ def extract_branch(
     return {
         "ss_v_per_dec": ss_v,
         "vth": vth,
+        "vth_in_range": vth_in_range,
         "i_leak": i_leak,
         "g_read": g_read,
         "did_dvg": did_dvg,
@@ -368,4 +490,7 @@ def extract_foms(
         g_lo=fwd["g_read"],
         g_hi=rev["g_read"],
         dg_dvth=dg_dvth,
+        # BOTH branches have to be inside the sweep. A memory window is a
+        # DIFFERENCE of two thresholds, so one bad branch is enough to ruin it.
+        vth_in_range=fwd["vth_in_range"] * rev["vth_in_range"],
     )

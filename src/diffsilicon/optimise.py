@@ -56,7 +56,11 @@ from .shared.design import (  # noqa: E402
     tunes_locked_material,
 )
 from .shared.material import EC_MV_CM, PR_UC_CM2  # noqa: E402
-from .shim.adjoint import shim_for  # noqa: E402
+from .shim.adjoint import (  # noqa: E402
+    OracleBudgetExhausted,
+    OracleNotConverged,
+    shim_for,
+)
 from .snn.lif import PHI_KEYS  # noqa: E402
 
 __all__ = ["FlagshipConfig", "run_flagship"]
@@ -84,6 +88,34 @@ class FlagshipConfig:
     # forces the shim to refresh J from the solver instead.
     min_radius: float = 0.012
     max_radius: float = 0.40
+    # A SAFETY NET ON THE GRADIENT'S MAGNITUDE. It should not bind.
+    #
+    # History, because the value has moved twice and the reason matters more
+    # than the number. This started as a workaround: the gradient came back at
+    # 6.1e13 against a loss of order 1, so `predicted = radius * |g|` was
+    # meaningless, every rho was zero, and the "rho < 0.25 forces a refresh"
+    # rule spent the whole budget rebuilding Jacobians. Bounding |g| made rho
+    # mean something again without touching the step DIRECTION, which is
+    # normalised anyway.
+    #
+    # It was a workaround for a real bug, and the bug is now fixed. The
+    # network's dL/dphi was being taken from autograd through 111 recurrent
+    # timesteps, and it did not agree with the network's own loss -- it pointed
+    # BACKWARDS. Measured at the flagship's starting corner, analytic against a
+    # central finite difference of the composed loss:
+    #
+    #     before   |g| = 9.25e5   cosine -0.975   (uphill)
+    #     after    |g| = 1.11     cosine +0.954   (downhill, right size)
+    #
+    # See `tesseracts/snn-lif-ecg/tesseract_api.py` under VJP_MODE.
+    #
+    # So the gradient's magnitude is now the truth -- the finite difference at
+    # that corner is 1.53 against the analytic 1.11 -- and the cap is set well
+    # above it, at 10. It exists only to stop a pathological point from taking
+    # a run with it, and on a healthy run it never binds. If a run log shows
+    # `grad_norm_used` pinned at the cap, that is a signal to investigate, not
+    # a knob to raise.
+    grad_norm_cap: float = 10.0
     lambda_e: float = 1.0e6
     lambda_r: float = 0.0
     seed: int = 0  # FIXED across steps: a resampled batch would make the
@@ -92,6 +124,29 @@ class FlagshipConfig:
     # task's 24, and the flagship pays one inner training run per design point.
     # Batches are class-balanced by construction (snn.ecg.ecg_batch), so 16 is
     # four beats of every class, not a lottery over a 50% N prior.
+    # THE INNER TRAINING MODE, PINNED HERE RATHER THAN LEFT TO THE SHELL.
+    #
+    # FOUND 2026-08-29 (D6), while checking that the spike-raster figure
+    # reproduces the flagship. It did not, and the reason was this: every banked
+    # result in this project -- the flagship, the race, the budget sweep, V6, V7,
+    # the correlations -- was produced under SNN_TRAIN_MODE=frozen, which each of
+    # those drivers sets for itself. `tesseract_api` defaults to `adapt`, and
+    # this loop set neither. So `python scripts/run_flagship.py --backend devsim`,
+    # the command the README gives, ran in `adapt` and returned 1.3152 where the
+    # reported run returned 1.3996. Nothing was wrong with either number; they
+    # were answers to different questions, and nothing on disk said which was
+    # which -- `result.json` did not record the mode either.
+    #
+    # `frozen` is also the right default on the merits, not merely the one that
+    # matches the bank: it is what the thesis does (train in software, deploy
+    # onto measured FeFET levels), and it makes the VJP EXACT rather than
+    # approximate, because the envelope-theorem argument for holding W fixed
+    # needs a stationary W* and a W that never moves is trivially stationary.
+    # See `tesseracts/snn-lif-ecg/tesseract_api.py` under TRAIN_MODE.
+    #
+    # It is serialised into result.json with everything else, so a run now says
+    # what it was.
+    train_mode: str = "frozen"
     tag: str = "mini-flagship"
     out_dir: str = ""
     # Where the run STARTS, normalised. Empty means the nominal device.
@@ -199,6 +254,16 @@ def run_flagship(cfg: FlagshipConfig, out_dir: Path | None = None) -> dict:
     os.environ["SHIM_ALPHA"] = str(cfg.alpha)
     os.environ["SHIM_REFRESH_EVERY"] = str(cfg.refresh_every)
     os.environ["SHIM_MAX_ORACLE_CALLS"] = str(cfg.max_oracle_calls)
+    # ORDER MATTERS AND IT IS LOAD-BEARING. T4 reads SNN_TRAIN_MODE once, at
+    # import, and the Tesseract that imports it is constructed a few lines below.
+    # Setting it after that construction would be silently ignored. The one case
+    # this cannot cover is a process that already imported T4 for some other
+    # reason; `result.json` records `train_mode` so such a run can be caught.
+    if cfg.train_mode not in ("frozen", "adapt", "scratch"):
+        raise ValueError(
+            f"train_mode={cfg.train_mode!r}; expected 'frozen', 'adapt' or 'scratch'."
+        )
+    os.environ["SNN_TRAIN_MODE"] = cfg.train_mode
 
     prov = Path(
         os.environ.get(
@@ -255,7 +320,28 @@ def run_flagship(cfg: FlagshipConfig, out_dir: Path | None = None) -> dict:
         template = make_oracle_input(np.asarray(theta))
         shim = shim_for(template)  # the same object the T3 endpoints hold
 
-        loss, grad = value_and_grad(theta)
+        # A trial point the solver cannot handle is survivable -- see the
+        # `solver_failed` branch below. The STARTING point is not: there is no
+        # smaller step to fall back to, and a run that begins nowhere has nothing
+        # to report. Say which point it was, in physical units, and stop.
+        try:
+            loss, grad = value_and_grad(theta)
+        except OracleBudgetExhausted:
+            raise
+        except OracleNotConverged as exc:
+            # Same reasoning as the solver-crash case just below, for the other
+            # failure: a starting point whose figures of merit are not a
+            # measurement gives the run nothing true to descend from, and there
+            # is no smaller step to retreat to. Stop, and name the device.
+            raise RuntimeError(
+                f"the oracle did not converge at the STARTING design point "
+                f"{_phys_row(theta, cfg.d)}: {exc}"
+            ) from exc
+        except RuntimeError as exc:
+            raise RuntimeError(
+                f"the solver failed at the STARTING design point "
+                f"{_phys_row(theta, cfg.d)}: {exc}"
+            ) from exc
         loss = float(loss)
         loss0 = loss
         fom0, phi0, net0 = observables(theta)
@@ -268,13 +354,62 @@ def run_flagship(cfg: FlagshipConfig, out_dir: Path | None = None) -> dict:
 
             s = -st.radius * grad / gnorm
             theta_try = box_project(theta + s)
-            predicted = st.radius * gnorm  # first-order predicted decrease
+            # The DIRECTION uses the whole gradient. Only the predicted decrease
+            # is bounded -- see `grad_norm_cap`.
+            gnorm_pred = (min(gnorm, cfg.grad_norm_cap) if cfg.grad_norm_cap > 0
+                          else gnorm)
+            predicted = st.radius * gnorm_pred  # first-order predicted decrease
 
             try:
                 loss_try, grad_try = value_and_grad(theta_try)
-            except RuntimeError as exc:  # budget exhausted inside the shim
+            except OracleBudgetExhausted as exc:
                 rows.append({"step": st.step, "event": "budget", "detail": str(exc)})
                 break
+            except (OracleNotConverged, RuntimeError) as exc:
+                # TWO DIFFERENT THINGS CAN GO WRONG AT A TRIAL POINT, and both
+                # are handled the same way but must be RECORDED apart.
+                #
+                # `solver_failed` -- the solver crashed and returned nothing.
+                # Measured on the open solver: every point in the d=4 box sweeps
+                # to -3.50 V except the exact ceiling of the film thickness
+                # range, 15.0 nm, where the Jacobian goes singular in deep
+                # accumulation. `box_project` clamps to the bounds, so the
+                # optimiser can land on that face exactly.
+                #
+                # `not_converged` -- the solver RAN and the answer is not a
+                # measurement: the currents were not all finite, or a threshold
+                # voltage came from outside the swept window. Added D4. This one
+                # is invisible without the flag, because it returns a complete
+                # set of finite, plausible figures of merit.
+                #
+                # Neither is the same thing as running out of budget, and until
+                # D3 the first was recorded as if it were.
+                #
+                # A trial point we cannot evaluate is a trial point we cannot
+                # accept. That is a rejection, and the trust-region already knows
+                # what to do with one: shrink and try nearer home. Stopping the
+                # whole run instead throws away every remaining call because one
+                # corner of the box is unusable.
+                rows.append({
+                    "step": st.step,
+                    "event": ("not_converged" if isinstance(exc, OracleNotConverged)
+                              else "solver_failed"),
+                    "theta_try": [float(v) for v in np.asarray(theta_try)],
+                    "theta_try_phys": _phys_row(theta_try, cfg.d),
+                    "radius": st.radius,
+                    "detail": str(exc)[:400],
+                })
+                st.rejected += 1
+                if st.radius <= cfg.min_radius + 1e-12:
+                    st.stalled += 1
+                    if st.stalled >= 2:
+                        rows.append({"step": st.step, "event": "stalled_unsolvable"})
+                        st.step += 1
+                        break
+                st.radius = max(st.radius * 0.5, cfg.min_radius)
+                shim.radius = max(shim.radius, cfg.min_radius)
+                st.step += 1
+                continue
             loss_try = float(loss_try)
 
             actual = loss - loss_try
@@ -290,6 +425,10 @@ def run_flagship(cfg: FlagshipConfig, out_dir: Path | None = None) -> dict:
                 "loss": loss,
                 "loss_try": loss_try,
                 "grad_norm": gnorm,
+                # Both are recorded. The raw norm is the measurement; the capped
+                # one is what rho was judged against. Reporting only the second
+                # would hide how far apart they are, which is the finding.
+                "grad_norm_used": gnorm_pred,
                 "radius": st.radius,
                 "rho": rho,
                 "accepted": bool(accept),

@@ -25,7 +25,7 @@ import os
 import sys
 from pathlib import Path
 
-__all__ = ["ensure_math_libs", "import_devsim"]
+__all__ = ["ensure_math_libs", "ensure_direct_solver", "import_devsim"]
 
 _done = False
 
@@ -95,9 +95,44 @@ def ensure_math_libs() -> str | None:
     return None
 
 
+_VALID_SOLVERS = ("mkl_pardiso", "superlu", "custom")
+
+
+def ensure_direct_solver(devsim) -> str:
+    """Make sure `direct_solver` names a solver that actually exists here.
+
+    devsim picks its direct solver from the math library it managed to load. Load
+    MKL and it selects `mkl_pardiso`; load a plain OpenBLAS -- which is all a
+    Linux CI runner has -- and it selects nothing, leaving the parameter at
+    `"unknown"`. Nothing complains at import. The failure arrives later, from
+    inside the first `solve()`:
+
+        DEVSIM FATAL: Unrecognized "direct_solver" parameter value "unknown".
+        Valid options are "mkl_pardiso", "superlu" or "custom".
+
+    So the whole oracle imports cleanly, builds its mesh, sets every parameter,
+    and dies on the first Newton step -- on Linux only, which is why this
+    survived every local run and surfaced the moment CI ran it.
+
+    SuperLU is built into the devsim wheel and needs no external library, so it
+    is always a valid fallback. MKL is left alone where it is available: it is
+    substantially faster, and switching solvers changes the last digits of a
+    converged solve, which would move every cached result.
+    """
+    try:
+        current = devsim.get_parameter(name="direct_solver")
+    except Exception:  # parameter not defined at all on some builds
+        current = None
+    if current in _VALID_SOLVERS:
+        return str(current)
+    devsim.set_parameter(name="direct_solver", value="superlu")
+    return "superlu"
+
+
 def import_devsim():
     """Import and return the devsim module, wiring up math libraries first."""
     ensure_math_libs()
     import devsim
 
+    ensure_direct_solver(devsim)
     return devsim

@@ -56,6 +56,181 @@ dt_hw: 11.0e-6          # s   -- dt_bio / A_accel, rounded to 11.0 us
 K_syn: 5.450675e-05     # -- FROZEN. Dimensionless synapse current-mirror ratio.
 th_th_nominal: 5.0      # spikes-to-fire at max weight on the nominal device
 
+# --- THE LEAK-BIAS TRIM. Added 2026-08-27 (D4). ------------------------------
+#
+# What this is, in one sentence: the neuron's leak bias is trimmed for each
+# device instead of being applied at one frozen voltage to every device.
+#
+# Why it had to exist. V_leak above is frozen at one absolute voltage, and every
+# device in the design box is evaluated at that same voltage. But the box moves
+# the transistor's threshold by volts, and the comment on V_leak already says
+# what that does: "a 60 mV threshold shift moves it about 5x". Measured over the
+# eight banked devices, I_leak spans 5.8e-16 to 1.6e-6 A -- NINE AND A HALF
+# DECADES -- and the DPI ratio dt/tau spans 2.0e-6 to 2.4e+03 with it.
+#
+# beta = exp(-dt/tau) cannot survive that. Over that range beta is not a dial,
+# it is a switch: measured, it comes back as EXACTLY 0.0000 or EXACTLY 1.0000 on
+# most of the box, with a derivative of exactly zero (recorded values -0.0e+00,
+# -1.4e-121, -2.5e-147). A design variable with no derivative over most of its
+# range is a design variable the optimiser cannot use.
+#
+# And away from the middle it is worse than dead, it is explosive. The network
+# is recurrent over 111 timesteps and is retrained from scratch at every design
+# point. Measured through the network alone, at the full 150 training steps,
+# with everything except beta held at the nominal device:
+#
+#     beta      0.30    0.50    0.58   0.6065  0.62   0.66    0.70    0.90    0.999
+#     seed 0    2.9e9   2.0e11    39     8.1     31   8.6e3   9.9e3   6.4e6   1.1e10
+#     seed 1      -       -      368      -     139   2.1e4     -       -       -
+#
+# Two seeds where it mattered, because the network is trained from scratch at
+# every point and one seed cannot tell a property of beta from a property of one
+# training run. The two agree to within a factor of ten everywhere, so this is a
+# real property of beta.
+#
+# The high side is orderly and matches the textbook exploding-gradient story for
+# a recurrent network. THE LOW SIDE IS NOT EXPLAINED: 0.50 is worse than 0.30,
+# which no spectral-radius argument accounts for, and it survived both a 20-step
+# and a 150-step training run so it is not the dead-network artefact it looked
+# like. It is simply a cliff, and the band stays away from it.
+#
+# The trim is what a real chip does about this: a per-neuron bias DAC. It is the
+# same idea as the gain trim in his own variability analysis -- "normalize by
+# that device's own g_max", one scalar per device -- moved from the synapse side
+# to the leak side. K_syn above is already exactly this for the synapse side and
+# has been since D1; the leak path simply never had one, and that asymmetry is
+# the bug.
+#
+# HOW IT IS DONE. The DPI ratio dt/tau is already dimensionless, so no
+# conductance normalisation is needed to make it comparable across devices --
+# the circuit relation tau = C_mem*SS/(ln10*I_tau) has done that job. What is
+# left is to work in decades, which is his convention throughout
+# fig_k3_variability.py, and to bound the result smoothly:
+#
+#     n     = log10(dt/tau)                               decades
+#     n_c   = n_lo + (n_hi - n_lo) * logistic((n - n_0)/w)
+#     beta  = exp(-10^n_c)
+#
+# The logistic is strictly increasing, so no two devices are ever given the same
+# beta and a leakier device always gives a leakier neuron. It is smooth
+# everywhere, so the derivative is non-zero over the WHOLE box -- which is the
+# defect this fixes. And it saturates gently rather than clipping, so there is no
+# kink for the optimiser to fall into.
+#
+# WHAT THIS COSTS, STATED PLAINLY: beta no longer ranges over nine decades of
+# device leakage. It ranges over the band below. The device still sets the
+# membrane decay, and still sets it monotonically, but the trim absorbs most of
+# the spread -- exactly as a real bias trim would. THIS CHANGES THE OBJECTIVE.
+# Every loss number computed before 2026-08-27 is on a different objective and
+# is not comparable to one computed after it.
+#
+# Set leak_trim_enable to 0 to recover the untrimmed D3 behaviour exactly.
+leak_trim_enable: 1
+
+# The band beta is trimmed into. Read it straight off the table above: the
+# gradient is in the tens or hundreds between 0.58 and 0.62, and is already near
+# 1e4 at 0.66 and 2e11 at 0.50. So the band is narrow, and it is narrow because
+# the measurement says so, not to be safe.
+beta_trim_lo: 0.575     # most leakage  -> fastest membrane
+beta_trim_hi: 0.635     # least leakage -> slowest membrane
+
+# Where the band is centred, in decades of dt/tau, and how many decades of
+# dt/tau move the logistic by one unit.
+#
+# leak_trim_centre is the NOMINAL d=4 device: t_fe 7 nm, L_g 40 nm,
+# log10(N_ch) 17.0, t_IL 1.0 nm, which measures I_leak = 1.302e-11 A and
+# SS = 79.16 mV/dec, giving dt/tau = 0.0417 and log10 = -1.380. So the
+# recalibration's own reference device lands in the middle of the band by
+# construction, and nothing else has to be asserted about where the middle is.
+#
+# Centring on the nominal device has a consequence worth stating, because it was
+# not arranged: the nominal device comes out at beta = 0.6058. The membrane
+# decay his own LSNN was designed for is 0.6065. Those agree to 0.1%, and the
+# band was set from a gradient measurement that knew nothing about either. So
+# the D3 agreement between his circuit's membrane decay and this project's
+# device-derived one is not lost by the trim -- it is recovered by it. Before
+# the trim the d=4 nominal device gave 0.9592, and that agreement was gone.
+#
+# leak_trim_width is set so the box does not saturate: dt/tau spans about nine
+# decades, so +-4.5 either side of centre, and w = 2.5 puts the extreme devices
+# at logistic argument +-1.8, where the slope is still half its peak. Every
+# device therefore keeps a real derivative, including the corners. Measured over
+# the eight banked devices, the whole box lands in beta 0.584 .. 0.627.
+leak_trim_centre: -1.380   # decades of dt/tau
+leak_trim_width: 2.5       # decades per unit logistic argument
+
+# --- THE SYNAPSE-MIRROR TRIM. Added 2026-08-27 (D4). ------------------------
+#
+# The same idea as the leak-bias trim above, applied to the firing threshold,
+# and it is the SECOND thing that was exploding the network's gradient. Fixing
+# the membrane decay is what exposed it.
+#
+# Measured through the network at three real design points, at 150 training
+# steps, with the membrane decay already trimmed:
+#
+#     th_th        3.76      1.97      1.22
+#     dL/dth_th    -999      1.2e7     1.8e6
+#
+# A firing threshold of 1.2 means a neuron fires on roughly its first input
+# spike. The network runs flat out, and a recurrent network running flat out has
+# an enormous gradient.
+#
+# THE NOTE ON K_syn ABOVE ALREADY PREDICTED THIS. It says K_syn exists solely so
+# that th_th is a sane spikes-to-fire number, and that "without it th_th comes
+# out at 2.7e-4 and every neuron fires on its first input spike". That is
+# exactly this failure. K_syn was frozen on D1 at the one value that fixes it
+# for ONE device; th_th goes as 1/g_max; and at the leaky corner of the design
+# box g_max is four times the nominal, so the fix stops working there.
+#
+# A current mirror's ratio is a thing a chip trims per array, the same way it
+# trims a bias voltage. So it is trimmed, in decades, exactly as the leak bias
+# is, with the same smooth logistic.
+#
+# The band is GEOMETRIC ABOUT 5.0 -- the frozen th_th_nominal just above -- so
+# the nominal device still gives exactly 5.0 spikes-to-fire and nothing frozen
+# has to move. Measured over the eight banked devices, the raw threshold spans
+# 1.22 to 5.62 and the trimmed one spans about 3.9 to 5.1.
+#
+# THIS IS THE SECOND CHANGE TO THE OBJECTIVE MADE ON D4, AND IT NEEDS YOUR
+# SIGN-OFF. Together with the leak-bias trim it means two of the five numbers
+# the device hands the network are now trimmed rather than raw. That is what a
+# real chip does, and it is the only way the gradient exists at all -- but it
+# does narrow how much of the device reaches the network, and that is your call,
+# not mine. Set th_trim_enable to 0 to switch it off.
+# WRITE THESE TO FULL PRECISION. The band being geometric about exactly 5.0 is
+# the whole point -- it is what keeps the frozen th_th_nominal untouched -- and
+# rounding breaks it silently. 3.5714 and 0.69897 (both correct to five places)
+# put the band's geometric centre at 4.99998 instead of 5.0, which is enough to
+# fail `test_transducer_produces_a_healthy_operating_point` on a device whose
+# raw threshold is 5.000006. sqrt(th_th_trim_lo * th_th_trim_hi) must be exactly
+# 5.0 and th_trim_centre must be exactly log10(5.0).
+th_trim_enable: 1
+th_th_trim_lo: 3.5714285714285716   # = 5.0 / 1.4
+th_th_trim_hi: 7.0                  # = 5.0 * 1.4
+th_trim_centre: 0.6989700043360187  # = log10(5.0), the frozen th_th_nominal
+th_trim_width: 0.30                 # decades per unit logistic argument
+
+# --- THE REFERENCE OPERATING POINT FOR THE SHARED NETWORK. D4, 2026-08-27. ---
+#
+# The network is no longer retrained from scratch at every design point. One
+# network is trained ONCE, here, and every design point starts from it. See
+# `tesseracts/snn-lif-ecg/tesseract_api.py` for the measurement that forced the
+# change and for the three modes.
+#
+# These five numbers are the NOMINAL d=4 device -- t_fe 7.0 nm, L_g 40 nm,
+# log10(N_ch) 17.0, t_IL 1.0 nm -- put through the open solver and this
+# transducer, with both trims on, on 2026-08-27. They are frozen for exactly the
+# reason V_leak and K_syn are frozen: the shared network must not move when the
+# design point does, or the chaos this change removes comes straight back.
+#
+# Recompute them ONLY if the trims or the extraction change, and re-derive them
+# from the nominal device rather than inventing them.
+w0_beta:  0.60583580396
+w0_g_min: 2.75119690794e-06
+w0_g_max: 2.66018992072e-04
+w0_th_th: 4.6697358609
+w0_sig_w: 0.101070186283
+
 I_crit_per_WL: 100.0e-9 # A   -- constant-current V_th criterion, times W/L_g
 W_dev_nm: 100.0         # nm  -- device width for D <= 5; free at D = 12
 U_T: 0.025852           # V   -- thermal voltage at 300 K

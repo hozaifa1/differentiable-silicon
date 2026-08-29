@@ -5,7 +5,13 @@ import pytest
 
 from diffsilicon.shared.contract import DIFFERENTIABLE_OUTPUTS, make_oracle_input
 from diffsilicon.shared.design import nominal_theta
-from diffsilicon.shim.adjoint import AdjointShim, ShimConfig, fd_jacobian, y_vector
+from diffsilicon.shim.adjoint import (
+    AdjointShim,
+    OracleNotConverged,
+    ShimConfig,
+    fd_jacobian,
+    y_vector,
+)
 
 
 @pytest.fixture()
@@ -159,3 +165,145 @@ def test_probes_stay_inside_the_design_box(tmp_path, monkeypatch):
     cfg = ShimConfig(alpha=0.02, backend="mock")
     J, _ = fd_jacobian(corner, make_oracle_input(corner), cfg, central=True)
     assert np.all(np.isfinite(J))
+
+
+# --- Directive 1: a point the oracle cannot MEASURE is not a point ------------
+
+
+def test_a_non_converged_probe_is_refused_rather_than_used(tmp_path, monkeypatch):
+    """The dangerous failure is the one that returns numbers.
+
+    A solver crash announces itself. A design point whose threshold voltage was
+    read from outside the swept window does not: it hands back seven finite,
+    plausible figures of merit, and before D4 nothing downstream could tell them
+    from a measurement. Measured 2026-08-26: one such point produced a memory
+    window of 8.02 V on a 5 V sweep, which became 100% weight noise, which the
+    network answered with a gradient of 7e10.
+
+    So `run_oracle` sets `converged = 0` and the probe REFUSES the answer.
+    """
+    monkeypatch.setenv("DIFFSILICON_CACHE_ROOT", str(tmp_path / "cache"))
+    monkeypatch.setenv("DIFFSILICON_PROVENANCE_DISABLE", "1")
+    theta = nominal_theta(5)
+    sh = AdjointShim(make_oracle_input(theta), ShimConfig(alpha=0.02, backend="mock"))
+
+    import diffsilicon.shim.adjoint as adj
+
+    real = adj.run_oracle
+
+    def not_converged(inp, backend=None):
+        out = real(inp, backend)
+        return out.model_copy(update={"converged": 0.0})
+
+    monkeypatch.setattr(adj, "run_oracle", not_converged)
+    with pytest.raises(OracleNotConverged, match="did not converge"):
+        sh.jacobian(theta)
+
+
+def test_a_refused_probe_is_still_recorded_as_a_real_solver_call(tmp_path, monkeypatch):
+    """It cost real solver time whether or not the answer was usable.
+
+    Logging after rejecting would under-count the budget and make the run's own
+    cost report wrong, which is the one thing the provenance log exists to get
+    right.
+    """
+    monkeypatch.setenv("DIFFSILICON_CACHE_ROOT", str(tmp_path / "cache"))
+    monkeypatch.setenv("DIFFSILICON_PROVENANCE_DISABLE", "1")
+    theta = nominal_theta(5)
+    sh = AdjointShim(make_oracle_input(theta), ShimConfig(alpha=0.02, backend="mock"))
+
+    import diffsilicon.shim.adjoint as adj
+
+    real = adj.run_oracle
+
+    def not_converged(inp, backend=None):
+        return real(inp, backend).model_copy(update={"converged": 0.0})
+
+    monkeypatch.setattr(adj, "run_oracle", not_converged)
+    with pytest.raises(OracleNotConverged):
+        sh.jacobian(theta)
+    assert sh.calls == 1
+    assert sh.ctr.log[-1]["converged"] == 0.0
+
+
+def test_the_two_refusals_have_two_types(tmp_path, monkeypatch):
+    """"Out of budget", "the solver crashed" and "the answer is not a
+    measurement" are three different things, and the run log has to say which.
+
+    They were one bare RuntimeError once, and a failed solve went into the log
+    as "we ran out of calls" on a run with plenty of budget left.
+    """
+    from diffsilicon.shim.adjoint import OracleBudgetExhausted
+
+    assert issubclass(OracleBudgetExhausted, RuntimeError)
+    assert issubclass(OracleNotConverged, RuntimeError)
+    assert not issubclass(OracleNotConverged, OracleBudgetExhausted)
+    assert not issubclass(OracleBudgetExhausted, OracleNotConverged)
+
+
+def test_one_bad_probe_costs_its_own_side_not_the_whole_gradient(tmp_path, monkeypatch):
+    """The measurement that forced this: at the design point where the D3
+    flagship's gradient reached 6.15e13, the CENTRE is healthy and exactly one
+    of its eight finite-difference neighbours is not -- SS = -2890 mV/dec and a
+    threshold of -36.4 V on a sweep stopping at -3.50 V.
+
+    Refusing that neighbour is right. Throwing away the other seven with it is
+    not: nine probes a gradient, any one of which can land on an unreadable
+    device, would reject good steps constantly and would kill a run outright if
+    it happened at the starting point. So the column falls back to a one-sided
+    difference and the run continues.
+    """
+    monkeypatch.setenv("DIFFSILICON_CACHE_ROOT", str(tmp_path / "cache"))
+    monkeypatch.setenv("DIFFSILICON_PROVENANCE_DISABLE", "1")
+    theta = nominal_theta(5)
+    cfg = ShimConfig(alpha=0.02, backend="mock")
+
+    import diffsilicon.shim.adjoint as adj
+
+    real = adj.run_oracle
+    poisoned = {"n": 0}
+
+    def one_bad_probe(inp, backend=None):
+        out = real(inp, backend)
+        # Poison exactly the second probe, i.e. the +h neighbour of coordinate 0.
+        poisoned["n"] += 1
+        if poisoned["n"] == 2:
+            return out.model_copy(update={"converged": 0.0})
+        return out
+
+    monkeypatch.setattr(adj, "run_oracle", one_bad_probe)
+    sh = AdjointShim(make_oracle_input(theta), cfg)
+    J = sh.jacobian(theta)
+
+    assert J.shape == (7, 5)
+    assert np.all(np.isfinite(J))
+    assert sh.ctr.salvaged_columns == [{"coord": 0, "kept": "minus"}]
+    assert len(sh.ctr.refused) == 1
+    # Every other column is still a central difference, so the salvage is local.
+    assert np.count_nonzero(J[:, 1:]) > 0
+
+
+def test_a_point_with_both_neighbours_unreadable_has_no_gradient(tmp_path, monkeypatch):
+    """A design point surrounded on both sides by devices we cannot measure is a
+    design point we cannot differentiate. Say so rather than invent a zero,
+    which would read as "this variable does nothing" and freeze it."""
+    monkeypatch.setenv("DIFFSILICON_CACHE_ROOT", str(tmp_path / "cache"))
+    monkeypatch.setenv("DIFFSILICON_PROVENANCE_DISABLE", "1")
+    theta = nominal_theta(5)
+
+    import diffsilicon.shim.adjoint as adj
+
+    real = adj.run_oracle
+    seen = {"n": 0}
+
+    def both_sides_bad(inp, backend=None):
+        out = real(inp, backend)
+        seen["n"] += 1
+        if seen["n"] in (2, 3):  # both neighbours of coordinate 0
+            return out.model_copy(update={"converged": 0.0})
+        return out
+
+    monkeypatch.setattr(adj, "run_oracle", both_sides_bad)
+    sh = AdjointShim(make_oracle_input(theta), ShimConfig(alpha=0.02, backend="mock"))
+    with pytest.raises(OracleNotConverged, match="no gradient in that direction"):
+        sh.jacobian(theta)

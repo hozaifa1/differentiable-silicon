@@ -124,6 +124,9 @@ class T1Config:
     tau_e: float = 0.0
     tau_p: float = 0.0
 
+    #: Fields with no defensible default. Absent them, the deck cannot be rendered.
+    REQUIRED_CALIBRATION = ("grid", "workfunction", "area_factor", "tau_e", "tau_p")
+
     def __post_init__(self) -> None:
         cal = _load_calibration()
         for k, v in cal.items():
@@ -131,10 +134,27 @@ class T1Config:
                 continue
             if not getattr(self, k, None):
                 setattr(self, k, v)
-        missing = [
-            k for k in ("grid", "workfunction", "area_factor", "tau_e", "tau_p")
-            if not getattr(self, k)
-        ]
+
+    def missing_calibration(self) -> list[str]:
+        return [k for k in self.REQUIRED_CALIBRATION if not getattr(self, k)]
+
+    def require_calibration(self) -> None:
+        """Refuse to render a deck against a device this repository does not have.
+
+        CONSTRUCTING a T1Config is fine without a calibration; USING one to build
+        a deck is not. That distinction was collapsed until CI found it: the
+        check used to live in __post_init__, so `T1Config().timeout_s` -- a
+        constant, and a question about this project rather than about anyone's
+        device -- raised on any machine without the licence file. Every test that
+        wanted a token mapping or a timeout had to have the calibration present,
+        which meant they only ran on one laptop and CI went red the moment they
+        were pushed.
+
+        The refusal itself is unchanged and is deliberate: the driver stops
+        rather than falling back on a plausible default, because a plausible
+        default here is someone else's device silently standing in for yours.
+        """
+        missing = self.missing_calibration()
         if missing:
             raise RuntimeError(
                 f"T1 device calibration missing: {missing}. Copy "
@@ -348,6 +368,7 @@ def deck_values(
     # `fefet_params` is what fills in the frozen defaults AND the locked material
     # constants, so the deck and DEVSIM see the same device by construction
     # rather than by two copies of the same table agreeing.
+    cfg.require_calibration()
     p = fefet_params(np.asarray(inputs.theta, dtype=np.float64))
     t_slab_cm = cfg.t_fe_slab_nm * 1e-7
     # t_fe is real geometry on this host: `cfg.grid` is a mesh built at a
@@ -439,7 +460,7 @@ def deck_values(
     return values
 
 
-def mesh_values(inputs: OracleInput, cfg: T1Config | None = None) -> dict:
+def mesh_values(inputs: OracleInput) -> dict:
     """Every @token@ the sde mesh template needs, in MICRONS.
 
     sde works in microns; the design vector is in nm and cm^-3. Getting the unit
@@ -448,7 +469,8 @@ def mesh_values(inputs: OracleInput, cfg: T1Config | None = None) -> dict:
     """
     from .oracle_devsim import fefet_params
 
-    cfg = cfg or T1Config()
+    # No calibration needed and none taken: the mesh is built from the DESIGN
+    # VECTOR alone. That is the whole point of rebuilding it.
     p = fefet_params(np.asarray(inputs.theta, dtype=np.float64))
     return {
         "L_GATE": f"{p.l_g / 1e-4:.9g}",  # cm -> um
@@ -541,7 +563,7 @@ def id_vg_curves(inputs: OracleInput) -> np.ndarray:
         # points that differ ONLY in gate length get different tags and different
         # cached decks. Without this the tag is blind to exactly the variables
         # rebuilding the mesh exists to expose.
-        values = {**values, **{f"mesh_{k}": v for k, v in mesh_values(inputs, cfg).items()}}
+        values = {**values, **{f"mesh_{k}": v for k, v in mesh_values(inputs).items()}}
     tag = f"ds_{content_tag(values)}"
     # EVERY path in the File block is resolved relative to sdevice's cwd, and cwd
     # has to stay at GAAFet/ so the mesh and the host's own material .par
@@ -568,7 +590,7 @@ def id_vg_curves(inputs: OracleInput) -> np.ndarray:
     # THE MESH. Either rebuild it at this design point's real geometry, or use
     # the one calibrated mesh and accept that only t_fe reaches the solver.
     if cfg.rebuild_mesh:
-        values["tdr"] = build_mesh(runner, mesh_values(inputs, cfg), tag)
+        values["tdr"] = build_mesh(runner, mesh_values(inputs), tag)
 
     scratch = Path("t1_scratch")
     scratch.mkdir(exist_ok=True)

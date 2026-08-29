@@ -116,8 +116,23 @@ def main() -> int:
     print("-" * (len(hdr) + 62))
 
     for name, theta in points:
-        row = evaluate(theta, args.backend, cc)
         phys = denormalise(np.asarray(theta), spec)
+        # ONE UNSOLVABLE POINT MUST NOT COST THE OTHER EIGHT. The open solver
+        # sweeps the whole d=4 box to -3.50 V except the exact ceiling of the
+        # film-thickness range, 15.0 nm, where the Jacobian goes singular in deep
+        # accumulation. Before D4 that raised and killed the sweep, so the run
+        # produced no JSON at all and the eight points that DID solve were lost
+        # with it. Record the failure as a row and carry on; `gates` below counts
+        # it as a fail, so nothing is quietly passed.
+        try:
+            row = evaluate(theta, args.backend, cc)
+        except Exception as exc:  # noqa: BLE001 -- the solver raises bare errors
+            row = {"solver_failed": True, "error": str(exc)[:400]}
+            res["points"].append({**row, "name": name, "theta": list(map(float, np.asarray(theta))),
+                                  "phys": {n: float(v) for n, v in zip(spec.names, phys, strict=True)}})
+            print(f"{name:10s} " + " ".join(f"{v:10.3f}" for v in phys)
+                  + " | SOLVER FAILED -- point recorded, sweep continues", flush=True)
+            continue
         row["name"] = name
         row["theta"] = list(map(float, np.asarray(theta)))
         row["phys"] = {n: float(v) for n, v in zip(spec.names, phys, strict=True)}
@@ -132,6 +147,8 @@ def main() -> int:
 
     # G5, the memory-window gate, re-read on the fixed extraction.
     nominal = res["points"][0]
+    if nominal.get("solver_failed"):
+        raise SystemExit("the NOMINAL point did not solve -- nothing below is meaningful")
     res["gates"] = {
         "G5_memory_window_gt_0p1V": {
             "value": nominal["memory_window_V"],
@@ -143,8 +160,14 @@ def main() -> int:
             "note": "calibration reports 45-75 mV/dec; 120 is the gate because "
                     "this is a different geometry on the same film",
         },
+        "every_point_solved": {
+            "pass": not any(p.get("solver_failed") for p in res["points"]),
+            "note": "a point the solver could not converge is a FAIL here, "
+                    "even though the sweep no longer stops for one",
+        },
         "sign_convention_MW_positive": {
-            "pass": all(p["memory_window_V"] > 0 for p in res["points"]),
+            "pass": all(p["memory_window_V"] > 0
+                        for p in res["points"] if not p.get("solver_failed")),
             "note": "forward = erased = high V_th, so MW > 0 on every point",
         },
     }

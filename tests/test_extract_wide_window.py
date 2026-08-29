@@ -148,3 +148,113 @@ def test_extraction_is_smooth_in_a_shifting_threshold():
     slope = np.diff(got) / np.diff(vths)
     assert np.all(slope > 0.85), f"V_th response stalls: min slope {slope.min():.3f}"
     assert np.all(slope < 1.15), f"V_th response jumps: max slope {slope.max():.3f}"
+
+
+# --- the measurement floor, and the property it exists to protect (D4) --------
+
+
+def drifting_offstate(vg, floor_current=2.0e-19, sigma_dec=0.6, seed=0):
+    """A branch whose DEEP-OFF tail is numerical drift rather than a current.
+
+    This is the shape that cost the project two flagship runs. A real sweep to
+    -3.50 V leaves the device fully off; the solver reports ~1e-19 A; and the
+    electron density there is ~1e-2 cm^-3 against 1e20 in the contacts, which is
+    sixty decades of dynamic range in one matrix against the sixteen double
+    precision carries. What comes back is drift.
+
+    The drift is LOG-NORMAL, not additive, because that is what it is: the
+    quantity being mangled is an exponentially small current, so its error is
+    multiplicative. `sigma_dec = 0.6` means a typical point is off by a factor of
+    four, which is mild next to the tens of percent measured on the real solver
+    between design points ten femtometres apart.
+
+    That matters for the test. Additive noise of the same nominal size does NOT
+    reproduce the failure -- the local log-slope it produces is too small to
+    compete with a real turn-on, so the steepness-weighted window ignores it and
+    the test passes for the wrong reason. Log-normal drift produces local slopes
+    of ~20 dec/V against the turn-on's 14, and the window takes the bait.
+    """
+    v = np.asarray(vg, dtype=np.float64)
+    rng = np.random.default_rng(seed)
+    turn_on = 1e-6 * 10.0 ** ((v - 0.5) / 0.070)  # 70 mV/dec
+    drift = floor_current * 10.0 ** (sigma_dec * rng.standard_normal(v.shape))
+    return np.maximum(turn_on, drift)
+
+
+def _mw(cfg, vg, fwd, rev):
+    f = extract_foms(jnp.asarray(vg), jnp.asarray(fwd), jnp.asarray(rev), cfg, 0.05)
+    return float(f.vth_fwd) - float(f.vth_rev)
+
+
+def test_the_floor_stops_the_extraction_reading_slopes_out_of_drift():
+    """THE regression test for the D4 blocker.
+
+    Two devices identical everywhere the current is measurable, differing ONLY
+    in sub-1e-18 A drift, must give the same memory window.
+
+    Measured on the real solver before the floor was raised: nudging the design
+    vector by ten femtometres moved the memory window by up to 0.239 V and the
+    loss by 0.0056 -- three times the entire descent the flagship achieved. On
+    this fixture the old floor is worse still, because nothing else about the two
+    curves differs at all.
+    """
+    vg = np.asarray(DEFAULT_VG_GRID, dtype=np.float64)
+    fwd_a, fwd_b = drifting_offstate(vg, seed=0), drifting_offstate(vg, seed=1)
+    rev_a = drifting_offstate(vg - 0.30, seed=2)
+    rev_b = drifting_offstate(vg - 0.30, seed=3)
+
+    # The fixture must actually be identical where it matters, or this proves
+    # nothing. Everything at or above the floor is the same closed-form turn-on.
+    cfg = ExtractionConfig()
+    meas = fwd_a >= cfg.i_floor
+    assert meas.sum() > 10, "fixture has almost no measurable region"
+    assert np.allclose(fwd_a[meas], fwd_b[meas], rtol=1e-12)
+
+    jump_new = abs(_mw(cfg, vg, fwd_a, rev_a) - _mw(cfg, vg, fwd_b, rev_b))
+    assert jump_new < 1e-6, (
+        f"memory window moved {jump_new:.3e} V on drift alone, at floor "
+        f"{cfg.i_floor:.0e} A"
+    )
+
+    # And the fixture really does bite: at the old floor the same two curves
+    # disagree about the memory window by TENS OF VOLTS, on a 5 V sweep.
+    jump_old = abs(_mw(cfg._replace(i_floor=1e-20), vg, fwd_a, rev_a)
+                   - _mw(cfg._replace(i_floor=1e-20), vg, fwd_b, rev_b))
+    assert jump_old > 1.0, (
+        "the fixture does not exercise the floor -- the old 1e-20 floor moved "
+        f"the window by only {jump_old:.3e} V, so this test would pass for the "
+        "wrong reason"
+    )
+
+
+def test_the_default_floor_is_high_enough_to_do_its_job():
+    """A guard on the constant itself, so it cannot be quietly lowered.
+
+    Measured: every curve point that moved under a ten-femtometre design change
+    had |I| <= 4.5e-19 A. A floor two decades above that kills the drift; below
+    ~1e-17 it starts letting it back in.
+    """
+    assert ExtractionConfig().i_floor >= 1e-17
+
+
+def test_the_floor_leaves_the_measurable_part_of_the_curve_alone():
+    """It must not touch anything a measurement could have seen.
+
+    The smallest genuine leak current anywhere in the design box is 3.1e-15 A,
+    thirty-one times the floor. Raising the floor one further decade would eat
+    3.6% of it, and I_leak sets the membrane decay.
+    """
+    vg = np.asarray(DEFAULT_VG_GRID, dtype=np.float64)
+    fwd = drifting_offstate(vg, seed=0)
+    rev = drifting_offstate(vg - 0.30, seed=2)
+
+    cfg = ExtractionConfig()
+    hi = extract_foms(jnp.asarray(vg), jnp.asarray(fwd), jnp.asarray(rev), cfg, 0.05)
+    lo = extract_foms(jnp.asarray(vg), jnp.asarray(fwd), jnp.asarray(rev),
+                      cfg._replace(i_floor=1e-20), 0.05)
+
+    # The conductances are read at +0.60 V, decades above the floor on any
+    # device, so the floor may not move them at all.
+    for k in ("g_lo", "g_hi", "dg_dvth"):
+        a, b = float(getattr(hi, k)), float(getattr(lo, k))
+        assert abs(a - b) / max(abs(b), 1e-30) < 1e-6, f"{k} moved: {a} vs {b}"

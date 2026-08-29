@@ -198,7 +198,15 @@ def run_oracle(inputs: OracleInput, backend: str | None = None) -> OracleOutput:
         g_hi=float(foms.g_hi),
         dg_dvth=float(foms.dg_dvth),
         id_vg=np.asarray(curves, dtype=np.float64),
-        converged=float(np.all(np.isfinite(np.asarray(curves)))),
+        # "Converged" now means two things, because two different failures
+        # produce a number that looks perfectly usable. The solver has to have
+        # returned finite currents, AND the extraction has to have found both
+        # thresholds INSIDE the voltages actually swept. A threshold read off
+        # the extrapolation past the end of the sweep is not a measurement, and
+        # before 2026-08-27 nothing said so -- see shared/extract.py.
+        converged=float(
+            np.all(np.isfinite(np.asarray(curves))) and float(foms.vth_in_range) > 0.5
+        ),
         solver_seconds=solver_seconds,
     )
 

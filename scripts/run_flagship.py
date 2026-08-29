@@ -48,6 +48,10 @@ def main() -> int:
     # Batches are class-balanced by construction (see snn.ecg.ecg_batch), so 16
     # is four beats of every class rather than a lottery over a 50% N prior.
     ap.add_argument("--batch", type=int, default=16)
+    # Defaults to frozen, which is what every banked result was produced under
+    # and what makes the VJP exact. See FlagshipConfig.train_mode.
+    ap.add_argument("--train-mode", default="frozen",
+                    choices=["frozen", "adapt", "scratch"])
     ap.add_argument("--tag", default="mini-flagship")
     ap.add_argument("--out-dir", default="")
     ap.add_argument("--theta0", default="", help="comma-separated normalised start point")
@@ -57,11 +61,13 @@ def main() -> int:
         d=a.d, backend=a.backend, max_oracle_calls=a.max_oracle_calls,
         max_steps=a.max_steps, alpha=a.alpha, refresh_every=a.refresh_every,
         trust_radius=a.trust_radius, lambda_e=a.lambda_e, lambda_r=a.lambda_r,
-        seed=a.seed, batch=a.batch, tag=a.tag, out_dir=a.out_dir, theta0=a.theta0,
+        seed=a.seed, batch=a.batch, train_mode=a.train_mode, tag=a.tag,
+        out_dir=a.out_dir, theta0=a.theta0,
     )
     res = run_flagship(cfg)
 
-    print(f"\n=== {cfg.tag} ({cfg.backend}, d={cfg.d}) ===")
+    print(f"\n=== {cfg.tag} ({cfg.backend}, d={cfg.d}, "
+          f"train_mode={cfg.train_mode}) ===")
     print(f"oracle calls      {res['oracle_calls']} of {cfg.max_oracle_calls}")
     print(f"steps             {res['steps']}  accepted {res['accepted']}  rejected {res['rejected']}")
     print(f"objective         {res['objective_initial']:.6f} -> {res['objective_final']:.6f} "

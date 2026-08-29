@@ -26,7 +26,12 @@ import jax.numpy as jnp
 import numpy as np
 from tesseract_jax import apply_tesseract
 
-from .shared.circuit import CircuitConfig, sigma_vth
+from .shared.circuit import (
+    CircuitConfig,
+    beta_from_dt_over_tau,
+    sigma_vth,
+    th_th_trimmed,
+)
 from .shared.contract import DEFAULT_VG_GRID, DIFFERENTIABLE_OUTPUTS
 from .shared.design import get_design
 from .snn.lif import PHI_KEYS
@@ -65,8 +70,15 @@ def transduce_jax(y: dict, theta, cfg: CircuitConfig) -> dict:
     g_min, g_max = y["g_lo"], y["g_hi"]
     mw = y["vth_fwd"] - y["vth_rev"]
 
-    beta = jnp.exp(-cfg.dt_hw * jnp.log(10.0) * i_tau / (cfg.c_mem * ss_v))
-    th_th = cfg.c_mem * cfg.v_spk / (cfg.k_syn * g_max * cfg.v_ds * cfg.dt_hw)
+    # ONE implementation of the trim, shared with `shared.circuit.transduce`.
+    # These two used to compute beta independently, which is precisely how a
+    # change gets applied to one path and not the other.
+    beta = beta_from_dt_over_tau(
+        cfg.dt_hw * jnp.log(10.0) * i_tau / (cfg.c_mem * ss_v), cfg
+    )
+    th_th = th_th_trimmed(
+        cfg.c_mem * cfg.v_spk / (cfg.k_syn * g_max * cfg.v_ds * cfg.dt_hw), cfg
+    )
 
     w_nm, lg_nm = _geometry_jax(theta)
     s_vth = sigma_vth(mw, w_nm * 1e-3, lg_nm * 1e-3, cfg)

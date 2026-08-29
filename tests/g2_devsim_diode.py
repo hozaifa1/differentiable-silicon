@@ -8,9 +8,17 @@ from __future__ import annotations
 
 import sys
 
-from diffsilicon.shared.devsim_env import ensure_math_libs
+from diffsilicon.shared.devsim_env import ensure_direct_solver, ensure_math_libs
 
 ensure_math_libs()
+
+# Pick the direct solver before the first solve(). A Linux runner has OpenBLAS
+# and no MKL, and devsim then leaves `direct_solver` at "unknown" -- which
+# imports fine, meshes fine, and dies inside the first Newton step. See
+# devsim_env.ensure_direct_solver.
+import devsim as _devsim  # noqa: E402
+
+ensure_direct_solver(_devsim)
 
 from devsim import (  # noqa: E402
     add_1d_contact,

@@ -132,3 +132,184 @@ def test_assumed_coefficients_are_declared_in_config():
     text = Path(_find_config()).read_text(encoding="utf-8")
     assert re.search(r"ASSUMED", text), "config must flag its assumed coefficients"
     assert "A_Vth" in text and "A_dom" in text
+
+
+# --- the leak-bias trim (D4) -------------------------------------------------
+#
+# The whole argument is in config/circuit.yaml under "THE LEAK-BIAS TRIM".
+# These tests pin the four properties the trim exists to provide, so that
+# changing its constants cannot silently take one of them away.
+
+
+def _trim_over_the_box():
+    """Membrane decay over the measured span of the design box, and its slope."""
+    import jax
+    import jax.numpy as jnp
+
+    from diffsilicon.shared.circuit import beta_from_dt_over_tau
+
+    # log10 of the DPI ratio dt/tau, measured over the eight banked devices:
+    # -5.70 (rand1) to +3.38 (t_fe_min). A little wider, to include the corners
+    # nobody has evaluated yet.
+    n = np.linspace(-7.0, 5.0, 61)
+    x = 10.0**n
+    beta = np.array([float(beta_from_dt_over_tau(jnp.asarray(v), CC)) for v in x])
+    slope = np.array([
+        float(jax.grad(lambda t: beta_from_dt_over_tau(t, CC))(jnp.asarray(v)))
+        for v in x
+    ])
+    return x, beta, slope
+
+
+def test_the_trim_keeps_the_membrane_decay_inside_its_band():
+    """Untrimmed, beta comes back as EXACTLY 0 or EXACTLY 1 on most of the box.
+
+    Measured on the eight banked devices before the trim: three at 0.0000, two
+    at 1.0000, with derivatives of -0.0e+00, -1.4e-121 and -2.5e-147. That is a
+    design knob with no slope, over most of its own range.
+    """
+    _, beta, _ = _trim_over_the_box()
+    assert beta.min() >= CC.beta_trim_lo - 1e-9
+    assert beta.max() <= CC.beta_trim_hi + 1e-9
+
+
+def test_the_trim_never_kills_the_slope_anywhere_in_the_box():
+    """A logistic and not a clip, precisely so that this holds at the corners.
+
+    A clip is flat outside its range, so it would hand back a derivative of
+    exactly zero on the devices that most need one, and it would put a kink at
+    each edge for the optimiser to fall into.
+    """
+    x, _, slope = _trim_over_the_box()
+    # In the log domain, which is where the trim is defined and where the scale
+    # is meaningful. d(beta)/d(log10 x) = slope * x * ln(10).
+    dlog = np.abs(slope) * x * np.log(10.0)
+    assert np.all(dlog > 1e-4), f"flat spot: min |dbeta/dlog10(dt/tau)| = {dlog.min():.3e}"
+
+
+def test_a_leakier_device_always_gives_a_leakier_neuron():
+    """Strictly decreasing. The trim absorbs the SPREAD; it must not reorder the
+    devices, or the optimiser would be told a leakier device is slower."""
+    _, beta, _ = _trim_over_the_box()
+    assert np.all(np.diff(beta) < 0.0)
+
+
+def test_the_nominal_device_lands_in_the_middle_of_the_band():
+    """leak_trim_centre is the nominal d=4 device's own dt/tau, so the reference
+    device sits at the middle by construction rather than by assertion."""
+    import jax.numpy as jnp
+
+    from diffsilicon.shared.circuit import beta_from_dt_over_tau
+
+    x_nom = 10.0**CC.leak_trim_centre
+    beta = float(beta_from_dt_over_tau(jnp.asarray(x_nom), CC))
+    mid = 0.5 * (CC.beta_trim_lo + CC.beta_trim_hi)
+    # The band is set in decades of dt/tau, not in beta, so the midpoint in beta
+    # is close to but not exactly the arithmetic mean. 0.04 is generous.
+    assert abs(beta - mid) < 0.04, f"nominal beta {beta:.4f} against band mid {mid:.4f}"
+
+
+def test_the_trim_can_be_switched_off_and_gives_back_the_old_behaviour():
+    """So a pre-D4 run can be replayed exactly, and so the trim's effect can
+    always be measured against its own absence rather than argued about."""
+    import jax.numpy as jnp
+
+    from diffsilicon.shared.circuit import beta_from_dt_over_tau
+
+    off = CC._replace(leak_trim_enable=0.0)
+    for n in (-5.0, -1.38, 0.0, 2.0):
+        x = jnp.asarray(10.0**n)
+        assert float(beta_from_dt_over_tau(x, off)) == pytest.approx(
+            float(np.exp(-(10.0**n))), rel=1e-12, abs=1e-300
+        )
+
+
+def test_transduce_and_the_pipeline_agree_on_the_membrane_decay():
+    """Two code paths compute beta -- the NamedTuple one in shared.circuit and
+    the dict one in pipeline.transduce_jax. They were independent until D4,
+    which is exactly how a change gets applied to one and not the other."""
+    import jax.numpy as jnp
+
+    from diffsilicon.pipeline import transduce_jax
+    from diffsilicon.shared.design import nominal_theta
+
+    foms, d = _nominal_foms()
+    a = transduce(foms, CC, float(d["L_g"]), float(d["W"]))
+    y = {k: jnp.asarray(float(getattr(foms, k)))
+         for k in ("ss", "vth_fwd", "vth_rev", "i_leak", "g_lo", "g_hi", "dg_dvth")}
+    b = transduce_jax(y, jnp.asarray(nominal_theta(4)), CC)
+    assert float(a.beta) == pytest.approx(float(b["beta"]), rel=1e-12)
+
+
+# --- the synapse-mirror trim (D4) --------------------------------------------
+
+
+def test_the_firing_threshold_stays_where_the_circuit_was_designed_for_it():
+    """th_th goes as 1/g_max, and g_max is four times bigger at the leaky corner
+    of the box than at nominal. So the frozen K_syn, which exists solely to make
+    th_th a sane spikes-to-fire number, stops doing its job out there.
+
+    Measured before the trim: th_th fell to 1.22, i.e. a neuron fires on roughly
+    its first input spike, and the network's gradient with respect to it came
+    back at 1.8e6 against -999 at the nominal device.
+    """
+    import jax.numpy as jnp
+
+    from diffsilicon.shared.circuit import th_th_trimmed
+
+    # The raw span measured over the eight banked devices, widened a little.
+    for raw in (0.5, 1.0, 1.22, 2.43, 3.76, 5.62, 12.0, 50.0):
+        out = float(th_th_trimmed(jnp.asarray(raw), CC))
+        assert CC.th_th_trim_lo - 1e-9 <= out <= CC.th_th_trim_hi + 1e-9
+
+
+def test_the_frozen_five_spikes_to_fire_survives_the_trim():
+    """The band is geometric about th_th_nominal = 5.0, so a device that already
+    needs five spikes to fire still needs exactly five. Nothing frozen moves."""
+    import math
+
+    import jax.numpy as jnp
+
+    from diffsilicon.shared.circuit import th_th_trimmed
+
+    # rel=1e-12, not 1e-4. At 1e-4 this passed while the band's geometric centre
+    # sat at 4.99998 -- both constants had been written to five decimal places --
+    # and the real failure surfaced two files away, in
+    # test_tier_a_pipeline.py::test_transducer_produces_a_healthy_operating_point,
+    # on a device whose raw threshold is 5.000006. A guard that tolerates the bug
+    # it exists to catch is not a guard.
+    assert float(th_th_trimmed(jnp.asarray(5.0), CC)) == pytest.approx(5.0, rel=1e-12)
+    assert math.isclose(math.sqrt(CC.th_th_trim_lo * CC.th_th_trim_hi), 5.0, rel_tol=1e-12)
+    assert math.isclose(CC.th_trim_centre, math.log10(5.0), rel_tol=1e-12)
+
+
+def test_the_firing_threshold_trim_keeps_devices_in_order_and_alive():
+    """Strictly increasing, and never flat. Same requirement as the leak trim:
+    a clip would give exactly zero slope on the devices that most need one."""
+    import jax
+    import jax.numpy as jnp
+
+    from diffsilicon.shared.circuit import th_th_trimmed
+
+    raw = np.logspace(-0.5, 1.8, 40)
+    out = np.array([float(th_th_trimmed(jnp.asarray(v), CC)) for v in raw])
+    slope = np.array([
+        float(jax.grad(lambda t: th_th_trimmed(t, CC))(jnp.asarray(v))) for v in raw
+    ])
+    assert np.all(np.diff(out) > 0.0)
+    dlog = slope * raw * np.log(10.0)
+    assert np.all(dlog > 1e-3), f"flat spot: min slope in decades = {dlog.min():.3e}"
+
+
+def test_both_trims_can_be_switched_off_together():
+    """So a pre-D4 run can be replayed exactly, and so each trim's effect can be
+    measured against its own absence rather than argued about."""
+    import jax.numpy as jnp
+
+    from diffsilicon.shared.circuit import beta_from_dt_over_tau, th_th_trimmed
+
+    off = CC._replace(leak_trim_enable=0.0, th_trim_enable=0.0)
+    assert float(th_th_trimmed(jnp.asarray(1.22), off)) == pytest.approx(1.22)
+    assert float(beta_from_dt_over_tau(jnp.asarray(0.5), off)) == pytest.approx(
+        float(np.exp(-0.5))
+    )
