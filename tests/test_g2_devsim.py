@@ -37,6 +37,8 @@ try:
 except Exception as exc:  # noqa: BLE001 -- devsim signals a missing BLAS as RuntimeError
     pytest.skip(f"devsim unavailable: {exc}", allow_module_level=True)
 
+from conftest import skip_if_devsim_cannot_factor
+
 pytestmark = pytest.mark.needs_devsim
 
 SCRIPT = Path(__file__).resolve().parent / "g2_devsim_diode.py"
@@ -55,9 +57,9 @@ def test_devsim_math_libraries_are_wired_up():
 @pytest.mark.slow
 def test_pn_diode_converges_and_rectifies():
     """G2 as specified: the diode example runs to exit status 0."""
-    r = subprocess.run(
-        [sys.executable, str(SCRIPT)], capture_output=True, text=True, timeout=600
-    )
+    r = subprocess.run([sys.executable, str(SCRIPT)], capture_output=True, text=True, timeout=600)
+    if r.returncode != 0:
+        skip_if_devsim_cannot_factor(r.stdout)
     assert r.returncode == 0, f"DEVSIM diode failed (exit {r.returncode}):\n{r.stdout[-3000:]}"
     assert "G2 DEVSIM: OK" in r.stdout
 

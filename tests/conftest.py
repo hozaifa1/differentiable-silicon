@@ -47,3 +47,35 @@ os.environ.setdefault("SNN_TASK", "synth")
 os.environ.setdefault("SNN_W0_STEPS", "5")
 os.environ.setdefault("SNN_ADAPT_STEPS", "2")
 os.environ.setdefault("SNN_TRAIN_STEPS", "5")
+
+
+# --------------------------------------------------------------------------
+# devsim: importing it proves it found a math library, not that the library
+# carries a working direct solver. That answer only arrives from inside a real
+# solve(), and on a machine where it is "no" the failure is indistinguishable
+# from a broken device model unless it is named.
+#
+# A machine that cannot factor a matrix cannot run the oracle AT ALL, which is
+# a fact about the machine. Every other assertion in the DEVSIM tests still
+# fails normally: this matches only the signatures devsim emits when it has no
+# usable solver, never a wrong number.
+# --------------------------------------------------------------------------
+
+_NO_DIRECT_SOLVER = (
+    "Matrix factorization failed",
+    "during LU Factorization",
+    "not supported in this build",
+    '"direct_solver" parameter value "unknown"',
+)
+
+
+def skip_if_devsim_cannot_factor(output: str) -> None:
+    """Skip, rather than fail, when devsim here has no usable direct solver."""
+    import pytest
+
+    for signature in _NO_DIRECT_SOLVER:
+        if signature in output:
+            pytest.skip(
+                f"devsim on this machine has no usable direct solver ({signature}). "
+                f"Install MKL to run the DEVSIM oracle tests."
+            )

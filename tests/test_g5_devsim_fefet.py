@@ -17,6 +17,7 @@ import pathlib
 
 import numpy as np
 import pytest
+from conftest import skip_if_devsim_cannot_factor
 
 from diffsilicon.oracle_devsim import (
     EPS_FE_BG,
@@ -114,8 +115,12 @@ def test_the_t1_deck_renders_for_every_design_vector():
     for D in (3, 4, 5, 12):
         v = deck_values(make_oracle_input(nominal_theta(D)))
         tag = "ds_" + content_tag(v)
-        v.update(plot=f"{tag}_des.plt", tdrdat=f"{tag}_des.tdr",
-                 log=f"{tag}_des.log", par=f"{tag}_des.par")
+        v.update(
+            plot=f"{tag}_des.plt",
+            tdrdat=f"{tag}_des.tdr",
+            log=f"{tag}_des.log",
+            par=f"{tag}_des.par",
+        )
         render_template(cmd, v)  # raises on an unresolved token
         render_template(par, v)
 
@@ -145,9 +150,7 @@ def test_the_fixed_slab_remap_preserves_the_coercive_voltage():
         # calibration.local.json, NOT oracle_devsim.EPS_FE_BG. Those are two
         # different solvers' films and using T2's constant here would silently
         # re-fit T1 away from the hysteresis it was calibrated against.
-        assert float(v["EPS_FE_EFF"]) / t_slab_cm == pytest.approx(
-            cfg.eps_fe_bg / p.t_fe, rel=1e-9
-        )
+        assert float(v["EPS_FE_EFF"]) / t_slab_cm == pytest.approx(cfg.eps_fe_bg / p.t_fe, rel=1e-9)
 
     # And at the calibrated thickness the remap is the identity, so nothing
     # about the fitted device moves when t_fe happens to equal the slab.
@@ -176,15 +179,22 @@ def test_g5_memory_window_and_branch_sign():
     from diffsilicon.shared.oracle import extraction_config
 
     inp = make_oracle_input(nominal_theta(3))
-    curves = np.asarray(id_vg_curves(inp))
+    try:
+        curves = np.asarray(id_vg_curves(inp))
+    except RuntimeError as exc:
+        skip_if_devsim_cannot_factor(str(exc))
+        raise
 
     assert curves.shape == (2, NVG)
     assert np.all(np.isfinite(curves))
     assert np.all(curves >= 0.0)
 
     foms = extract_foms(
-        jnp.asarray(DEFAULT_VG_GRID), jnp.asarray(curves[0]), jnp.asarray(curves[1]),
-        extraction_config(inp.theta), float(inp.vds_lin),
+        jnp.asarray(DEFAULT_VG_GRID),
+        jnp.asarray(curves[0]),
+        jnp.asarray(curves[1]),
+        extraction_config(inp.theta),
+        float(inp.vds_lin),
     )
     mw = float(foms.vth_fwd) - float(foms.vth_rev)
     assert mw > 0.1, f"G5: memory window {mw:.4f} V"

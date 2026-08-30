@@ -17,6 +17,14 @@ jobs:
   test:
     name: Tier A -- full pipeline, no Docker, no license
     runs-on: ubuntu-latest
+    env:
+      # MKL picks its pivoting by thread count, and the shared runners have been
+      # failing LU factorization with a divide-by-zero at thread counts we do not
+      # control. Pin to one thread: the DEVSIM solves here are small, so the cost
+      # is nil and the factorization is deterministic.
+      MKL_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_THREADING_LAYER: "SEQUENTIAL"
     steps:
       - uses: actions/checkout@v4
 
