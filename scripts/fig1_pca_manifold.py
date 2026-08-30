@@ -106,7 +106,7 @@ def main() -> int:
     frac = (s**2) / (s**2).sum()
     S = (Z - Z.mean(0)) @ vt.T
     cum2 = frac[0] + frac[1]
-    print(f"explained variance: " + "  ".join(f"PC{i+1} {f*100:.1f}%"
+    print("explained variance: " + "  ".join(f"PC{i+1} {f*100:.1f}%"
                                               for i, f in enumerate(frac)))
     print(f"PC1+PC2 = {cum2*100:.1f}%")
 
@@ -259,8 +259,8 @@ def main() -> int:
              f"two states conduct alike is not a memory.",
              fontsize=7.8, ha="center", va="center", color="0.25",
              bbox=dict(boxstyle="round,pad=0.36", fc="white", ec="0.82", lw=0.6))
-    print(f"  out-of-range coordinates: "
-          f"{[k for k, o in zip(PHI_KEYS, out_flags) if o]}")
+    print("  out-of-range coordinates: "
+          f"{[k for k, o in zip(PHI_KEYS, out_flags, strict=True) if o]}")
     print(f"  g_max/g_min at phi* = {ratio:.3f}; devices "
           f"{np.nanmin(dev_ratio):.3g}..{np.nanmax(dev_ratio):.3g} "
           f"(median {np.nanmedian(dev_ratio):.4g})")

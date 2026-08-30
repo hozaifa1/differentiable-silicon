@@ -95,12 +95,12 @@ def main() -> int:
         DIFFERENTIABLE_OUTPUTS,
         make_oracle_input,
     )
-    from diffsilicon.shim.adjoint import _Counter, ShimConfig, fd_jacobian
-    from diffsilicon.shared.oracle import run_oracle
+    from diffsilicon.shim.adjoint import ShimConfig, _Counter, fd_jacobian
 
     rows = [json.loads(line) for line in
             STEPS.read_text(encoding="utf-8").splitlines() if line.strip()]
-    flag = json.loads(RESULT.read_text(encoding="utf-8"))
+    # Read for its side effect: fail early if the banked result is missing.
+    _ = json.loads(RESULT.read_text(encoding="utf-8"))
 
     # The distinct points the run actually stood on, in order.
     path: list[np.ndarray] = []

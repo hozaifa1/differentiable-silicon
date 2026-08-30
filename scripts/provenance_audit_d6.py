@@ -132,7 +132,7 @@ def main() -> int:
               f"step says {own}, log says {','.join(served) or 'NOTHING'}  "
               f"{'OK' if ok and agrees else 'MISMATCH'}")
 
-    print(f"\n3. NOTHING REPORTED CAME OFF THE MOCK")
+    print("\n3. NOTHING REPORTED CAME OFF THE MOCK")
     print(f"   flagship steps with no provenance line : {len(missing)}")
     print(f"   flagship steps served only by the mock : {len(mocked)}")
     print(f"   steps whose own recorded backend is absent from the log : "
@@ -140,8 +140,8 @@ def main() -> int:
     mock_only = [h for h, bs in hashes.items() if bs == {"mock"}]
     print(f"   design points the mock is the ONLY source for, anywhere in the "
           f"log: {len(mock_only)}")
-    print(f"   (those are the CI and gradient-check points; none of them is a "
-          f"flagship step)")
+    print("   (those are the CI and gradient-check points; none of them is a "
+          "flagship step)")
 
     span = (f"{time.strftime('%Y-%m-%d %H:%M', time.localtime(t_lo))} -> "
             f"{time.strftime('%Y-%m-%d %H:%M', time.localtime(t_hi))}")

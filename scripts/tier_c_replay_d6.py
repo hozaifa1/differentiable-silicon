@@ -152,7 +152,7 @@ from diffsilicon.shared.contract import (  # noqa: E402
     DIFFERENTIABLE_OUTPUTS,
     make_oracle_input,
 )
-from diffsilicon.shared.design import get_design, nominal_theta  # noqa: E402
+from diffsilicon.shared.design import nominal_theta  # noqa: E402
 from diffsilicon.shared.oracle import device_geometry, run_oracle  # noqa: E402
 from diffsilicon.shim.adjoint import ShimConfig, fd_jacobian  # noqa: E402
 
