@@ -38,10 +38,41 @@ def _candidate_dll_dirs() -> list[Path]:
     return [d for d in dirs if d.is_dir()]
 
 
+def _mkl_candidates() -> list[str]:
+    """Every libmkl_rt this interpreter might be able to load, newest name first."""
+    from glob import glob
+
+    roots = [Path(sys.prefix), Path(getattr(sys, "base_prefix", sys.prefix))]
+    patterns = [str(r / "lib" / "libmkl_rt.so*") for r in roots]
+    patterns += ["/usr/lib/x86_64-linux-gnu/libmkl_rt.so*", "/usr/lib64/libmkl_rt.so*"]
+    seen: list[str] = []
+    for pat in patterns:
+        for m in sorted(glob(pat), reverse=True):
+            if m not in seen:
+                seen.append(m)
+    return seen
+
+
 def _ensure_linux_blas() -> str | None:
-    """Find a BLAS/LAPACK devsim can load, preferring the bare names it expects."""
+    """Find a math library devsim can load, preferring one that carries a solver.
+
+    OpenBLAS is enough to make `import devsim` succeed and is NOT enough to run
+    anything: devsim picks its direct solver from the math library it loaded, and
+    with OpenBLAS it picks none, leaving `direct_solver` at "unknown". SuperLU is
+    not compiled into every wheel, so the fallback can fail too. The run then gets
+    all the way through meshing and parameter setup and dies on the first solve().
+
+    MKL is the one option that always brings a direct solver with it, so it is
+    searched for first, and BLAS/LAPACK stay as the fallback for a machine that
+    has no MKL at all.
+    """
     import ctypes.util
     from glob import glob
+
+    for cand in _mkl_candidates():
+        if _loadable(cand):
+            os.environ["DEVSIM_MATH_LIBS"] = cand
+            return cand
 
     for bare in ("libopenblas.so", "liblapack.so", "libblas.so"):
         if ctypes.util.find_library(bare[3:-3]) and _loadable(bare):

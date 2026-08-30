@@ -20,9 +20,13 @@ dependencies = [
 
 [project.optional-dependencies]
 snn = ["torch>=2.4", "wfdb>=4.1", "scikit-learn>=1.5"]
-# The Windows devsim wheel ships no BLAS/LAPACK and no MKL, and refuses to import
-# without one. See diffsilicon.shared.devsim_env. Linux wheels are self-contained.
-devsim = ["devsim>=2.10", "mkl>=2024.0; sys_platform == 'win32'"]
+# The devsim wheel ships no BLAS/LAPACK and no MKL on either platform, and refuses
+# to import without one. Linux is not self-contained either: a plain OpenBLAS
+# satisfies the import but leaves `direct_solver` at "unknown", and the wheel is
+# not built with SuperLU, so the first solve() dies with nothing to factor the
+# matrix. MKL is the one option that carries a direct solver on both platforms.
+# See diffsilicon.shared.devsim_env.
+devsim = ["devsim>=2.10", "mkl>=2024.0"]
 
 [dependency-groups]
 dev = [
