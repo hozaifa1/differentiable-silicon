@@ -138,15 +138,25 @@ jobs:
         # Jacobian IS a finite difference: comparing it against another finite
         # difference cannot agree more closely than the two truncation errors
         # allow. eps is set to the shim's own step so the two agree on scale.
-        # Measured on D1: 0 failures / 56 checks. V2 on D3 reports the full
-        # cosine-vs-staleness curve rather than leaning on a single threshold.
+        # --max-evals 8 is what makes this the 56-check run the notes describe:
+        # theta is the only differentiated input, so n_evals passes straight
+        # through and 8 x 7 outputs = 56. Without it the default of 1000 asks
+        # for 7000 checks and the budget dies partway.
+        # THE D1 FIGURE OF 0 FAILURES / 56 NO LONGER HOLDS: measured 30 Aug on
+        # the mock backend it is 5 / 56, all on dg_dvth and ss. V2 on D3 reports
+        # the full cosine-vs-staleness curve rather than leaning on a threshold.
         env:
           ORACLE_BACKEND: mock
           TESSERACT_API_PATH: tesseracts/adjoint-shim/tesseract_api.py
+          # check-gradients probes the oracle far more than an optimisation
+          # step does, and the shim's 65-call cap is sized for the latter.
+          # The cap is meant to be raised deliberately; this is that.
+          SHIM_MAX_ORACLE_CALLS: "100000"
         run: |
           uv run python scripts/make_check_payload.py > payload.json
           uv run tesseract-runtime check-gradients @payload.json \
             --endpoints vector_jacobian_product \
+            --max-evals 8 \
             --eps 0.02 --rtol 0.15 --seed 0
 
       # The payload sets smooth_spikes=True. Finite-differencing a Heaviside gives
