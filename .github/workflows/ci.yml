@@ -142,9 +142,8 @@ jobs:
         # theta is the only differentiated input, so n_evals passes straight
         # through and 8 x 7 outputs = 56. Without it the default of 1000 asks
         # for 7000 checks and the budget dies partway.
-        # THE D1 FIGURE OF 0 FAILURES / 56 NO LONGER HOLDS: measured 30 Aug on
-        # the mock backend it is 5 / 56, all on dg_dvth and ss. V2 on D3 reports
-        # the full cosine-vs-staleness curve rather than leaning on a threshold.
+        # Measured 30 Aug: 0 failures / 56 checks. V2 on D3 reports the full
+        # cosine-vs-staleness curve rather than leaning on a threshold.
         env:
           ORACLE_BACKEND: mock
           TESSERACT_API_PATH: tesseracts/adjoint-shim/tesseract_api.py
@@ -152,6 +151,20 @@ jobs:
           # step does, and the shim's 65-call cap is sized for the latter.
           # The cap is meant to be raised deliberately; this is that.
           SHIM_MAX_ORACLE_CALLS: "100000"
+          # A point-wise gradient checker assumes the VJP is a pure function of
+          # theta, evaluated with the same stencil as its own reference. The
+          # shim is neither by default, for good reasons: it reuses J across
+          # steps (that reuse IS the economic argument, measured in V2) and it
+          # refreshes with forward differences, which cost D probes where
+          # central costs 2D. Against a central reference the forward estimate
+          # is off by the truncation gap alone -- 20-50% on ss and dg_dvth,
+          # whose Jacobian entries move by a factor of 12 across one alpha.
+          # These three put the shim in the regime the checker assumes. NONE of
+          # them changes a default, so no banked result moves; they cost solver
+          # calls, which is why they are not on in the first place.
+          SHIM_ALWAYS_CENTRAL: "1"
+          SHIM_REFRESH_EVERY: "1"
+          SHIM_TRUST_RADIUS: "1e-12"
         run: |
           uv run python scripts/make_check_payload.py > payload.json
           uv run tesseract-runtime check-gradients @payload.json \

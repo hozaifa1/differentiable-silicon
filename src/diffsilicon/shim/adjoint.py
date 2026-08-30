@@ -62,6 +62,12 @@ class ShimConfig:
     max_oracle_calls: int = 65
     backend: str | None = None
     clip_to_box: bool = True
+    #: Rebuild J with CENTRAL differences on every refresh, not just the anchor.
+    #: Off by default: forward costs D probes where central costs 2D, and an
+    #: optimisation step does not need the extra order. A point-wise gradient
+    #: checker does, because its own reference is a central difference and
+    #: comparing O(h) against O(h^2) measures the stencil, not the gradient.
+    always_central: bool = False
 
 
 @dataclass
@@ -316,9 +322,18 @@ class AdjointShim:
 
     # --- ground truth -----------------------------------------------------
     def refresh(self, theta: np.ndarray, central: bool | None = None) -> np.ndarray:
-        """Rebuild J from the solver. Central for the anchor, forward thereafter."""
+        """Rebuild J from the solver. Central for the anchor, forward thereafter.
+
+        `always_central` overrides that. The forward refresh is an O(h)
+        estimate, and against a checker whose reference is an O(h^2) central
+        difference the two disagree by the truncation gap alone -- on this
+        device, by 20-50% on `ss` and `dg_dvth`, whose Jacobian entries move by
+        a factor of 12 across a single alpha. That gap is a property of the
+        stencil rather than of the gradient, so anything comparing against a
+        central reference has to ask for one.
+        """
         if central is None:
-            central = self.J is None  # anchor once, then forward differences
+            central = self.cfg.always_central or self.J is None
         self.J, self.y = fd_jacobian(theta, self.template, self.cfg, self.ctr, central=central)
         self.theta = np.asarray(theta, dtype=np.float64).ravel().copy()
         self.steps_since_refresh = 0
@@ -423,5 +438,6 @@ def shim_for(inputs: OracleInput, cfg: ShimConfig | None = None) -> AdjointShim:
             refresh_every=int(os.environ.get("SHIM_REFRESH_EVERY", 4)),
             trust_radius=float(os.environ.get("SHIM_TRUST_RADIUS", 0.15)),
             max_oracle_calls=int(os.environ.get("SHIM_MAX_ORACLE_CALLS", 65)),
+            always_central=os.environ.get("SHIM_ALWAYS_CENTRAL", "") == "1",
         ))
     return _REGISTRY[key]
