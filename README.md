@@ -89,15 +89,18 @@ optimiser — because `sentaurus-fefet` and `devsim-fefet` publish a byte-identi
 [a test asserts that they still do](tests/test_tier_a_pipeline.py). That line is the whole reason
 this is built on Tesseract.
 
-All five images are on GHCR and public. Pin by digest, not by tag — `latest` is a moving target:
+All five images are on GHCR and public: the digests below were read with an
+anonymous pull token, so they are what an unauthenticated clone resolves too.
+`latest` is a moving target, so pin by digest, as
+`ghcr.io/hozaifa1/<image>@<digest>`. Read 30 Aug 2026:
 
-| Tesseract | Image |
-|---|---|
-| T1 | `ghcr.io/hozaifa1/sentaurus-fefet` |
-| T2 | `ghcr.io/hozaifa1/devsim-fefet` |
-| T3 | `ghcr.io/hozaifa1/adjoint-shim` |
-| T4 | `ghcr.io/hozaifa1/snn-lif-ecg` |
-| mock | `ghcr.io/hozaifa1/mock-oracle` |
+| Tesseract | Image | Digest of `latest` |
+|---|---|---|
+| T1 | `ghcr.io/hozaifa1/sentaurus-fefet` | `sha256:d2c3362d7a301afe55fccddd96a51cc076202f18bed8bf479ed307419af4a49c` |
+| T2 | `ghcr.io/hozaifa1/devsim-fefet` | `sha256:fd4b63226ffd671485ed89164fa31db13d370ecd5847ade6e4cdd2f062341003` |
+| T3 | `ghcr.io/hozaifa1/adjoint-shim` | `sha256:848a5964498083706ec98f1474a95527172d0dcb15a5f527e397d94f1619f9f1` |
+| T4 | `ghcr.io/hozaifa1/snn-lif-ecg` | `sha256:a3fc80b67559d41e02f73676285ddfb8a2b0cad3fa15545740b1f9cf1890ba49` |
+| mock | `ghcr.io/hozaifa1/mock-oracle` | `sha256:ddc7df1aec946d99afef43f4a6dd3383a1954455d59d5fe079385ef3cafd3570` |
 
 ### Running an optimisation
 

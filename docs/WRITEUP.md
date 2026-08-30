@@ -99,8 +99,25 @@ written-down smooth relaxation, H_k(u) = ½(1 + ku/(1+k|u|)), and the backward
 rule is *exactly* H_k′. That consistency is why the organisers' own
 `check-gradients` can verify T4 at all — finite differences of a hard Heaviside
 are either zero or one spike-flip large, so a hard forward pass cannot be
-gradient-checked by anybody. **0 failures / 56 checks** on the shim, **0 / 10** on
-the network.
+gradient-checked by anybody. **0 failures / 56 checks** on the shim, in CI, on
+every push.
+
+Two conditions on that number, because neither is the default and a reader who
+runs the checker without them will not reproduce it. The shim reuses `J` between
+calls and refreshes it with forward differences, both to save solver calls; a
+point-wise checker assumes neither, and its own reference is a central
+difference. `SHIM_ALWAYS_CENTRAL=1` with `SHIM_REFRESH_EVERY=1` puts the shim in
+the regime the checker assumes. Under the defaults the same 56 checks report 5
+failures, all on `ss` and `dg_dvth`, whose Jacobian entries move by a factor of
+12 across one `alpha` — the gap is the stencil, not the gradient.
+
+The network is a separate case. T4 must be gradient-checked under
+`SNN_TRAIN_MODE=frozen`: the default `adapt` mode trains the readout inside
+`apply`, so the forward is not a function of its inputs and an `eps` of 1e-6
+divides run-to-run variation by a million. Measured in `adapt`, all 10 checks
+fail with finite differences three orders off the returned gradient. Frozen is
+what every banked result already uses, and it is what makes the VJP exact rather
+than approximate.
 
 ## 4. Prior work, head-on
 
@@ -352,9 +369,11 @@ Two bugs found by using the toolkit rather than reading it, both drafted in
    live in `provenance.jsonl` instead of on `OracleOutput`.
 2. **Vector-valued per-parameter `eps` in `finite_differences.py`** — the scalar
    `eps` is inherited by `check-gradients`, and T4's inputs span beta ≈ 0.6 down
-   to g_min ≈ 2.6e-5, where an `eps` of 1e-4 is four times g_min itself. The docs
-   already flag the limitation for "physical applications with unnormalized
-   inputs"; this repository is exactly that case.
+   to g_min ≈ 2.6e-5, where an `eps` of 1e-4 is four times g_min itself. The
+   `check-gradients` docs already warn that the step has to be chosen against the
+   inputs, though only in the other direction: a derivative reported as 0.0 means
+   `eps` was too small. Too large is the failure this repository hits, and at
+   g_min it stops being a perturbation at all.
 
 ---
 

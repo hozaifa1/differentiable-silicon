@@ -459,9 +459,9 @@ class of solver, and offering to fill the cell in collaboration. If D7 finishes 
 minimal cell as a bonus commit. **Not before.**
 
 **KEEP: the upstream PR.** `eps` is a scalar `float` on all three functions in
-`tesseract_core/runtime/experimental/finite_differences.py`; the docs themselves flag the limitation
-for *"physical applications with unnormalized inputs"*, and this project is precisely that case
-(t_fe in nm, N_ch in cm^-3). Vector-valued per-parameter `eps`, with this project as the motivating
+`tesseract_core/runtime/experimental/finite_differences.py`. The `check-gradients` docs warn that
+`eps` has to be chosen against the inputs, in the direction of it being too small; this project hits
+the other end (t_fe in nm, N_ch in cm^-3, eighteen orders apart). Vector-valued per-parameter `eps`, with this project as the motivating
 case. **Cheapest $1,000 on the board. Land it D7.**
 
 ---

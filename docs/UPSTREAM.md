@@ -71,8 +71,16 @@ design for an audit trail, but it was forced rather than chosen.
 **Fix size:** small, plus tests.
 
 `tesseract_core/runtime/experimental/finite_differences.py` takes `eps` as a
-scalar `float` on all three functions, and the docstrings themselves flag the
-limitation for *"physical applications with unnormalized inputs"*.
+scalar `float` on all three functions. The `check-gradients` docstring already
+warns that the value has to be chosen against the inputs:
+
+> Finite difference approximations are sensitive to numerical precision. When
+> finite differences are reported incorrectly as 0.0, it is likely that the
+> chosen `eps` is too small, especially for inputs that do not use float64
+> precision.
+
+It warns about too small. This repository hits the same argument from the other
+end, where a step larger than the value it perturbs replaces that value instead.
 
 ### The confirmation
 
