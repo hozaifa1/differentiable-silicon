@@ -71,6 +71,7 @@ import numpy as np
 
 from .shared.contract import OracleInput
 from .shared.design import get_design
+from .shared.devsim_env import ensure_direct_solver
 from .shared.material import EC_MV_CM, PR_UC_CM2, SQUARENESS
 
 __all__ = ["id_vg_curves", "FeFETParams", "fefet_params", "FE_ACTIVE_FRACTION"]
@@ -515,6 +516,13 @@ def _build(d, p: FeFETParams, branch_sign: float) -> None:
     )
 
     d.reset_devsim()
+    # reset_devsim re-derives `direct_solver` from the math libraries it finds,
+    # discarding what import_devsim set. Where MKL is present it lands back on
+    # mkl_pardiso and nothing moves; where it is not it lands on "unknown", and
+    # the first solve() below dies. This re-asserts the superlu fallback only
+    # when the current value is invalid, so on any machine with MKL it does
+    # nothing and no banked result moves.
+    ensure_direct_solver(d)
     _build_mesh(d, p)
 
     SetSiliconParameters(DEVICE, BULK, 300)
