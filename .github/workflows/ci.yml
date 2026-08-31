@@ -193,3 +193,50 @@ jobs:
           uv run tesseract-runtime check-gradients @payload_snn.json \
             --endpoints vector_jacobian_product \
             --eps 1e-6 --rtol 0.10 --seed 0
+
+  tier-b:
+    name: Tier B -- the pipeline against the container a judge pulls
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # No `--extra devsim`, and that is the claim, not an oversight: with the
+      # solver in a container the host does not need DEVSIM, BLAS, or a licence.
+      # Nothing here can import a solver even if it wanted to.
+      - name: Sync the environment
+        run: uv sync --extra snn --group dev --frozen
+
+      # No docker login step anywhere in this job. The runner pulls the way an
+      # unauthenticated judge pulls, so a package that quietly went private
+      # fails here instead of in front of them.
+      - name: Pull the published image, anonymously
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io || true
+          docker pull ghcr.io/hozaifa1/devsim-fefet:latest
+          docker image inspect --format='{{index .RepoDigests 0}}' ghcr.io/hozaifa1/devsim-fefet:latest
+
+      - name: Serve it
+        run: |
+          set -euo pipefail
+          uv run tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101
+          for _ in $(seq 60); do
+            curl -sf http://localhost:8101/health && break
+            sleep 2
+          done
+          curl -sf http://localhost:8101/health
+
+      - name: Tier B -- schema over the wire, no mock fallback, gradient through the hop
+        env:
+          ORACLE_URL: http://localhost:8101
+        run: uv run pytest tests/test_tier_b_served.py -v
+
+      - name: Tear it down
+        if: always()
+        run: uv run tesseract teardown --all || true

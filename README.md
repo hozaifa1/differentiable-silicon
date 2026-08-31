@@ -67,34 +67,43 @@ collection failing on `ModuleNotFoundError: No module named 'torch'`.
 `results/cache/mock/` is only 124 KiB — nearly all of that time is the spiking network itself, 111
 timesteps per beat in float64. Budget six minutes, not two.
 
-**Tier B — Docker, no license.** Swap the commercial solver for the Apache-2.0 one.
+**Tier B — Docker, no license.** The solver moves into a container, and the machine running the
+pipeline stops needing one. Three commands, no login:
 
 ```bash
 docker pull ghcr.io/hozaifa1/devsim-fefet:latest
 ```
 
-Then serve it and point the orchestrator at it:
-
 ```bash
-tesseract serve devsim-fefet --port 8101
+tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101
 ```
 
 ```bash
-ORACLE_BACKEND=url ORACLE_URL=http://localhost:8101 uv run pytest tests/test_tier_a_pipeline.py
+ORACLE_URL=http://localhost:8101 uv run pytest tests/test_tier_b_served.py -v
 ```
+
+Note what is *not* in that environment: no `--extra devsim`, no BLAS, no license. The solver is in
+the container; the host only orchestrates.
 
 **Swapping the closed-source commercial solver for the open one is one environment variable.**
 Nothing else in the pipeline changes — not the shim, not the transducer, not the network, not the
-optimiser — because `sentaurus-fefet` and `devsim-fefet` publish a byte-identical frozen schema, and
-[a test asserts that they still do](tests/test_tier_a_pipeline.py). That line is the whole reason
-this is built on Tesseract.
+optimiser — because `sentaurus-fefet` and `devsim-fefet` publish a byte-identical frozen schema.
+[`tests/test_tier_b_served.py`](tests/test_tier_b_served.py) is that claim tested across the wire
+rather than asserted: the served container's OpenAPI schema against the frozen one, the returned
+figures of merit against the values DEVSIM gave on the development machine (1%, on a different OS
+with a different BLAS underneath), a guard that fails if anything falls back to the analytic mock,
+and `jax.grad` all the way to `dL/dθ` with nine container solves in the middle. It runs on every
+push as the **Tier B** job in [CI](https://github.com/hozaifa1/differentiable-silicon/actions/workflows/ci.yml).
+That job pulls the published image with `docker logout ghcr.io` in front of it, so a package that
+quietly went private fails there, before it ever reaches you.
 
 All five images are on GHCR and public: the digests below were read with an
 anonymous pull token, so they are what an unauthenticated clone resolves too.
-`latest` is a moving target, so pin by digest, as
-`ghcr.io/hozaifa1/<image>@<digest>`. Read 30 Aug 2026:
+Pin by digest, as `ghcr.io/hozaifa1/<image>@<digest>`: every number in this
+repository was produced against these five. `latest` has moved since they were
+read on 30 Aug 2026, which is the reason the table is here:
 
-| Tesseract | Image | Digest of `latest` |
+| Tesseract | Image | Pinned digest |
 |---|---|---|
 | T1 | `ghcr.io/hozaifa1/sentaurus-fefet` | `sha256:d2c3362d7a301afe55fccddd96a51cc076202f18bed8bf479ed307419af4a49c` |
 | T2 | `ghcr.io/hozaifa1/devsim-fefet` | `sha256:fd4b63226ffd671485ed89164fa31db13d370ecd5847ade6e4cdd2f062341003` |
@@ -199,13 +208,14 @@ uv run python scripts/make_manifest.py --check
 | Contract | **frozen** — `OracleInput` / `OracleOutput`, seven smooth FoMs |
 | Extraction | all seven within **0.5 %** of a closed-form reference across the design box |
 | Smoothness (G4) | ~5e-7 against a 0.15 threshold; the metric halves exactly under grid refinement |
-| V3 `check-gradients` | **0 failures / 56 checks** on the shim, **0 / 10** on the network |
+| V3 `check-gradients` | **0 failures / 56 checks** on the shim, in CI on every push, under the central-difference refresh the checker assumes — see [WRITEUP §3](docs/WRITEUP.md) for the two conditions and the default-mode number |
 | Open oracle (G2) | DEVSIM converges a pn diode, 5.9 decades of rectification |
 | Open oracle (G5) | **passed** — hysteretic Id–Vg, memory window **0.394 V** against a 0.1 V gate, ~36 s per design point |
 | Containers (G3) | all five build and push to GHCR from CI |
+| Tier B (served container) | **verified in CI** — the published image pulled without a login, served, and the whole gradient taken through it |
 | Tier C (Sentaurus replay) | **verified** — 164 of 164 float64 values bit-identical, with sockets and subprocesses blocked; zero orphan cache entries |
 | Provenance (G10) | 5,749 forward evaluations logged with backend and input hash; all 15 flagship steps present, a real solver wrote every one |
-| Tests | **155**, lint clean |
+| Tests | **158**, lint clean |
 
 ## License
 

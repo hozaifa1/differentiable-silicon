@@ -78,3 +78,14 @@ results/cache/mock/
 # regenerated from DIFFSILICON_ECG_DIR in about eight seconds. See
 # src/diffsilicon/snn/ecg.py.
 results/cache/ecg/
+
+# `tesseract-runtime serve` drops a run_<uuid>/ beside the working directory for
+# every request it handles. They hold logs, nothing reproducible.
+run_*/
+
+# The url backend writes what came off a wire into its own directory, stamped
+# with the URL rather than a solver name. Nothing reads it back -- the url path
+# does not consult a cache, by design, so that a Tier B call is always a real
+# call -- and a directory of entries nothing references would read as orphans in
+# the provenance audit.
+results/cache/url/

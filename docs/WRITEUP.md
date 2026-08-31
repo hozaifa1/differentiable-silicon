@@ -306,8 +306,25 @@ pytest`. 152 tests against an analytic mock (6 more skip without DEVSIM); every
 wire, schema and gradient hop. Timed on a fresh clone into a fresh venv: 74 s to
 sync, then 352 s cold / 314 s warm.
 
-**Tier B — Docker, no licence.** `docker pull ghcr.io/hozaifa1/devsim-fefet` and
-set `ORACLE_BACKEND=url`. This is the swap-one-variable claim, executable.
+**Tier B — Docker, no licence.** `docker pull ghcr.io/hozaifa1/devsim-fefet`,
+`tesseract serve` it, point `ORACLE_URL` at it. This is the swap-one-variable
+claim, executed rather than asserted: `tests/test_tier_b_served.py` checks the
+container's served schema against the frozen one, checks its figures of merit
+against the values DEVSIM gave on the development machine to 1% (a different
+operating system, a different BLAS underneath), refuses to pass if anything
+falls back to the analytic mock, and takes `jax.grad` to `dL/dθ` with nine
+container solves in the middle. The environment it runs in has no DEVSIM, no
+BLAS and no licence; the solver is in the container. It is a CI job, so it runs
+on every push, and the runner does `docker logout ghcr.io` before it pulls.
+
+Writing that test found a bug on exactly the path a judge would have walked.
+Every other backend writes its cache record through `encode_output`. The `url`
+backend built its from the raw wire response, so the first real container call
+died on `TypeError: Object of type ndarray is not JSON serializable`, *after*
+the solve, which is the part you pay for. The README had also been sending
+readers at `tests/test_tier_a_pipeline.py` with `ORACLE_BACKEND=url` in front of
+it; that file pins the backend to `mock` in an autouse fixture, so the command
+ran green and touched no container at all.
 
 **Tier C — every Sentaurus number, no licence and no network.** Verified, not
 asserted: `scripts/tier_c_replay_d6.py` blocks `socket` and `subprocess` and

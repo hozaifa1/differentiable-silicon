@@ -151,8 +151,24 @@ def run_oracle(inputs: OracleInput, backend: str | None = None) -> OracleOutput:
                 }
             )
         out = _from_record(rec)
-        CacheStore(rec.get("backend", "url")).put(key, rec)
-        _log_provenance(rec)
+        # The record that comes back over the wire holds numpy arrays, and every
+        # other backend reaches the cache through `encode_output`. This branch
+        # did not, so the first real Tier B call died on
+        # `TypeError: Object of type ndarray is not JSON serializable` -- after
+        # the container had already solved, which is the expensive part.
+        #
+        # It also could not have stamped the record correctly if it had worked:
+        # a served Tesseract cannot report which solver it is, because `backend`
+        # is a string and every output leaf has to be an array to cross into JAX
+        # (docs/UPSTREAM.md, item 1). So the stamp is the thing that IS known
+        # here -- the URL the value came from -- and ORACLE_URL_BACKEND names the
+        # solver when the operator knows it. The directory stays `url/` either
+        # way, so a value that came over a wire is never filed as one that did
+        # not.
+        label = os.environ.get("ORACLE_URL_BACKEND") or f"url:{url}"
+        stamped = encode_output(out, label, input_hash)
+        CacheStore("url").put(key, stamped)
+        _log_provenance(stamped)
         return out
 
     if backend == "replay":
