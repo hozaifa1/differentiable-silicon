@@ -103,19 +103,25 @@ push as the **Tier B** job in [CI](https://github.com/hozaifa1/differentiable-si
 That job pulls the published image with `docker logout ghcr.io` in front of it, so a package that
 quietly went private fails there, before it ever reaches you.
 
-All five images are on GHCR and public: the digests below were read with an
-anonymous pull token, so they are what an unauthenticated clone resolves too.
-Pin by digest, as `ghcr.io/hozaifa1/<image>@<digest>`: every number in this
-repository was produced against these five. `latest` has moved since they were
-read on 30 Aug 2026, which is the reason the table is here:
+All five images are on GHCR and public. The digests below were read with an
+anonymous pull token, so they are what an unauthenticated clone resolves too, and
+the `devsim-fefet` line is the exact image the green Tier B job pulled and ran the
+gradient through. Pin by digest, as `ghcr.io/hozaifa1/<image>@<digest>`. A digest
+never moves; `latest` moves on every push to `main`, which is why this table
+exists. Read 31 Aug 2026:
 
 | Tesseract | Image | Pinned digest |
 |---|---|---|
-| T1 | `ghcr.io/hozaifa1/sentaurus-fefet` | `sha256:d2c3362d7a301afe55fccddd96a51cc076202f18bed8bf479ed307419af4a49c` |
-| T2 | `ghcr.io/hozaifa1/devsim-fefet` | `sha256:fd4b63226ffd671485ed89164fa31db13d370ecd5847ade6e4cdd2f062341003` |
-| T3 | `ghcr.io/hozaifa1/adjoint-shim` | `sha256:848a5964498083706ec98f1474a95527172d0dcb15a5f527e397d94f1619f9f1` |
-| T4 | `ghcr.io/hozaifa1/snn-lif-ecg` | `sha256:a3fc80b67559d41e02f73676285ddfb8a2b0cad3fa15545740b1f9cf1890ba49` |
-| mock | `ghcr.io/hozaifa1/mock-oracle` | `sha256:ddc7df1aec946d99afef43f4a6dd3383a1954455d59d5fe079385ef3cafd3570` |
+| T1 | `ghcr.io/hozaifa1/sentaurus-fefet` | `sha256:941bfd927135ad365885e0c1c6d7d4b4b528e6f611ea0e1721ea3d3e3e4eeec5` |
+| T2 | `ghcr.io/hozaifa1/devsim-fefet` | `sha256:c627349d17001b57494394545ad5c962fd1966067142bf4a62216a9296c864d6` |
+| T3 | `ghcr.io/hozaifa1/adjoint-shim` | `sha256:1510e1a6ba26f7bb2d35db65502da8e5adb358482f81fb8a6200c283ec20f7f4` |
+| T4 | `ghcr.io/hozaifa1/snn-lif-ecg` | `sha256:2452910c10f88f89f14486e78b91adea3509a51c803f1fad50275f2762664ee1` |
+| mock | `ghcr.io/hozaifa1/mock-oracle` | `sha256:9df1c6e23005057e81bddfb51a2cd5bfd0d692d001a1ab17861ae7d452c6eaf6` |
+
+An earlier revision of this table pinned the 30 Aug builds. Those digests still
+pull, and the `devsim-fefet` one among them cannot solve: it predates the mkl
+line in `tesseracts/devsim-fefet/tesseract_requirements.txt`, so it loads DEVSIM,
+serves the frozen schema, and then has nothing that can factor a matrix.
 
 ### Running an optimisation
 
@@ -219,7 +225,7 @@ uv run python scripts/make_manifest.py --check
 | Open oracle (G2) | DEVSIM converges a pn diode, 5.9 decades of rectification |
 | Open oracle (G5) | **passed** — hysteretic Id–Vg, memory window **0.394 V** against a 0.1 V gate, ~36 s per design point |
 | Containers (G3) | all five build and push to GHCR from CI |
-| Tier B (served container) | **verified in CI** — the published image pulled without a login, served, and the whole gradient taken through it |
+| Tier B (served container) | **green** — the published image pulled with no login, served, and `jax.grad` taken through it in 94 s: schema over the wire, no mock fallback, every component of dL/dθ finite and non-zero |
 | Tier C (Sentaurus replay) | **verified** — 164 of 164 float64 values bit-identical, with sockets and subprocesses blocked; zero orphan cache entries |
 | Provenance (G10) | 5,749 forward evaluations logged with backend and input hash; all 15 flagship steps present, a real solver wrote every one |
 | Tests | **158**, lint clean |
