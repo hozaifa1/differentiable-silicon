@@ -225,10 +225,17 @@ jobs:
           docker pull ghcr.io/hozaifa1/devsim-fefet:latest
           docker image inspect --format='{{index .RepoDigests 0}}' ghcr.io/hozaifa1/devsim-fefet:latest
 
+      # The same three variables the Tier A job pins, for the same measured
+      # reason: MKL picks its pivoting by thread count, and on a shared runner
+      # the thread count is not ours to control. Without them the container
+      # loads a solver, runs Newton to 1e-13, and then dies inside LU
+      # factorization with "floating point exception of type Invalid,
+      # Divide-by-zero". These solves are small, so one thread costs nothing and
+      # the factorization becomes deterministic.
       - name: Serve it
         run: |
           set -euo pipefail
-          uv run tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101
+          uv run tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101             -e MKL_NUM_THREADS=1 -e OMP_NUM_THREADS=1 -e MKL_THREADING_LAYER=SEQUENTIAL
           for _ in $(seq 60); do
             curl -sf http://localhost:8101/health && break
             sleep 2

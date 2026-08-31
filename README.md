@@ -75,8 +75,12 @@ docker pull ghcr.io/hozaifa1/devsim-fefet:latest
 ```
 
 ```bash
-tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101
+tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101 -e MKL_NUM_THREADS=1 -e OMP_NUM_THREADS=1 -e MKL_THREADING_LAYER=SEQUENTIAL
 ```
+
+Those three variables are not decoration. MKL picks its pivoting by thread count, and on a machine
+where that count is large the factorization inside DEVSIM dies with a divide-by-zero after Newton
+has already converged to 1e-13. The solves here are small, so one thread costs nothing.
 
 ```bash
 ORACLE_URL=http://localhost:8101 uv run pytest tests/test_tier_b_served.py -v
