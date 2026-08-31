@@ -67,9 +67,16 @@ def _log_provenance(rec: dict) -> None:
         "converged": rec.get("converged"),
         "ss": rec.get("ss"),
     }
-    _PROVENANCE_LOG.parent.mkdir(parents=True, exist_ok=True)
-    with open(_PROVENANCE_LOG, "a", encoding="utf-8") as fh:
-        fh.write(json.dumps(line, separators=(",", ":")) + "\n")
+    # Same reason CacheStore.put tolerates an unwritable root: inside a built
+    # Tesseract this path resolves under the filesystem root, which the container
+    # user cannot create. An audit trail that cannot be written must not take the
+    # solve down with it. DIFFSILICON_PROVENANCE_LOG points it somewhere writable.
+    try:
+        _PROVENANCE_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with open(_PROVENANCE_LOG, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(line, separators=(",", ":")) + "\n")
+    except OSError:
+        return
 
 
 def device_geometry(theta_n) -> tuple[float, float]:

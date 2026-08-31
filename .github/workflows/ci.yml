@@ -235,7 +235,7 @@ jobs:
       - name: Serve it
         run: |
           set -euo pipefail
-          uv run tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101             -e MKL_NUM_THREADS=1 -e OMP_NUM_THREADS=1 -e MKL_THREADING_LAYER=SEQUENTIAL
+          uv run tesseract serve ghcr.io/hozaifa1/devsim-fefet:latest --port 8101 -e MKL_NUM_THREADS=1 -e OMP_NUM_THREADS=1 -e MKL_THREADING_LAYER=SEQUENTIAL -e DIFFSILICON_CACHE_ROOT=/tmp/diffsilicon-cache -e DIFFSILICON_PROVENANCE_LOG=/tmp/diffsilicon-provenance.jsonl
           for _ in $(seq 60); do
             curl -sf http://localhost:8101/health && break
             sleep 2

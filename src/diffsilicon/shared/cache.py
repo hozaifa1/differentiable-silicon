@@ -148,6 +148,7 @@ class CacheStore:
         self.hits = 0
         self.misses = 0
         self.writes = 0
+        self.unwritable = False
 
     def path_for(self, key: str) -> Path:
         # Two-level fan-out keeps any one directory under a few hundred entries.
@@ -162,9 +163,24 @@ class CacheStore:
         with open(p, encoding="utf-8") as fh:
             return json.load(fh)
 
-    def put(self, key: str, record: dict[str, Any]) -> Path:
+    def put(self, key: str, record: dict[str, Any]) -> Path | None:
+        """Bank one evaluation. Returns None if this store cannot be written to.
+
+        A cache is an optimisation and a reproduction aid. It is never the reason
+        a solve is allowed to fail. Inside a built Tesseract the package sits two
+        levels from the filesystem root, so `_DEFAULT_ROOT` resolves to
+        `/results/cache`, which the container user cannot create: the first
+        served `apply` solved correctly and then answered HTTP 500 out of
+        `os.mkdir`. Set DIFFSILICON_CACHE_ROOT to somewhere writable to keep the
+        records; without it the value is still returned and still logged to the
+        provenance file.
+        """
         p = self.path_for(key)
-        p.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            self.unwritable = True
+            return None
         # Write-then-rename so an interrupted run never leaves a half-written
         # entry that a later replay would read as truth.
         tmp = p.with_suffix(".json.tmp")
