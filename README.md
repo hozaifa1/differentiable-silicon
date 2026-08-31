@@ -206,6 +206,7 @@ uv run python scripts/make_manifest.py --check
 | [`fig2_budget_crossover`](docs/figures/fig2_budget_crossover.png) | sample efficiency against solver calls. Gradient descent is the **only** arm that converts extra budget into performance — random search is flat to six decimal places from 12 calls to 48 |
 | [`fig3_hysteresis_descent`](docs/figures/fig3_hysteresis_descent.png) | the device moving. The Id–Vg loop at every accepted step: memory window **0.415 → 0.576 V**, bought by giving up subthreshold slope, **71 → 97 mV/dec** |
 | [`fig4_spike_raster`](docs/figures/fig4_spike_raster.png) | what that does to the classifier. The layer does **not** fire more (rate 0.4344 → 0.4572, per-neuron correlation 0.9999) — **one spike in eleven moves**, and that is enough to unstick a readout that answered one class for all sixteen beats |
+| [`anim_descent`](docs/figures/anim_descent.gif) | the same descent as thirteen seconds of footage rather than one static panel. Every frame is a design point DEVSIM actually solved, replayed from `results/cache/devsim/`; nothing between two steps is interpolated. `scripts/anim_descent.py` redraws it |
 
 ## Status
 
