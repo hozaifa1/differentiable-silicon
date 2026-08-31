@@ -2,3 +2,13 @@ numpy>=1.26
 jax[cpu]>=0.4.35
 pyyaml>=6.0
 devsim>=2.10
+# MKL is not an optimisation here, it is the only thing in the image that can
+# factor a matrix. libopenblas-dev (see tesseract_config.yaml) is enough to make
+# `import devsim` succeed and is not enough to run anything: devsim picks its
+# direct solver from whichever math library it loaded, and with OpenBLAS it picks
+# none and leaves `direct_solver` at "unknown". This wheel is not built with
+# SuperLU either. Without this line the image builds, passes `tesseract check`,
+# serves, answers abstract_eval, publishes the frozen schema, and then returns
+# HTTP 500 on the first apply that has to solve. Same reason the `devsim` extra in
+# pyproject.toml pins it. See diffsilicon.shared.devsim_env.
+mkl>=2024.0

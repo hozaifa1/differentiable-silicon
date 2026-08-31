@@ -197,7 +197,10 @@ jobs:
   tier-b:
     name: Tier B -- the pipeline against the container a judge pulls
     runs-on: ubuntu-latest
-    needs: test
+    # `build` and not `test`, because this job pulls `latest` off GHCR and on a
+    # push to main `build` is what puts the current commit's image there. With
+    # `needs: test` the two race and this job tests the previous image.
+    needs: build
     steps:
       - uses: actions/checkout@v4
 
@@ -236,6 +239,12 @@ jobs:
         env:
           ORACLE_URL: http://localhost:8101
         run: uv run pytest tests/test_tier_b_served.py -v
+
+      # A Tesseract that fails inside `apply` answers HTTP 500 and keeps the
+      # traceback in the container. Without this the log shows only the 500.
+      - name: What the container said
+        if: failure()
+        run: docker ps -a --format '{{.ID}} {{.Image}}' | awk '{print $1}' | xargs -r -n1 docker logs --tail 200
 
       - name: Tear it down
         if: always()
