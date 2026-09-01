@@ -90,3 +90,9 @@ run_*/
 # the provenance audit.
 results/cache/url/
 results/cache/w0/44c39e58ad5ebd94e5110f160052123c.pt
+
+# Agent configuration and memory files
+CLAUDE.md
+MEMORY.md
+.agents/
+skills-lock.json

@@ -36,10 +36,10 @@ Words used below:
 Sixteen steps, eight accepted, 64 solver calls, **16.6 minutes**. Every previous
 run moved the loss by less than 0.002 and left accuracy unchanged.
 
-**Four separate faults had to be fixed, and the last one was the real blocker:**
+**I had to fix four separate faults, and the last one was the real blocker:**
 
 1. One bad neighbouring device was poisoning the gradient. Worth a factor of
-   400,000 — but not the cause.
+   400,000. But not the cause.
 2. The membrane decay was pinned against its limit over most of the design
    range, with a derivative of exactly zero. Real, but not the cause.
 3. The firing threshold was collapsing to "fires on its first input spike" at
@@ -48,18 +48,18 @@ run moved the loss by less than 0.002 and left accuracy unchanged.
    optimiser to walk uphill all along. *That* was the cause.
 
 **I was wrong twice on the way and both corrections are below.** Last night's
-document blamed the circuit — corrected. Then I blamed the mesh and one
-particular measured number — also wrong, and section 2 says so. Every claim here
+document blamed the circuit. Corrected. Then I blamed the mesh and one
+particular measured number, also wrong, and section 2 says so. Every claim here
 is a measurement.
 
-**Two things need your sign-off** — section 6.
+**Two things need your sign-off**: section 6.
 
 ---
 
 ## 1. The gradient pointed backwards — the real blocker
 
 At the design point the flagship starts from, I compared the gradient the
-optimiser uses against a plain finite difference of the loss — actually moving
+optimiser uses against a plain finite difference of the loss: actually moving
 each of the four numbers a little and watching what happens.
 
 | | gradient the optimiser used | what the loss actually does |
@@ -73,8 +73,8 @@ Every sign is wrong and every size is about 700,000 times too big. As an angle,
 the two point almost exactly opposite: **cosine −0.975**.
 
 So the optimiser was handed a direction that goes uphill and walked it
-faithfully. Everything that looked broken this week — steps rejected at every
-size, the trust region collapsing, runs stalling after two accepted steps —
+faithfully. Everything that looked broken this week (steps rejected at every
+size, the trust region collapsing, runs stalling after two accepted steps)
 follows from that one fact.
 
 ### Which link, measured
@@ -88,7 +88,7 @@ follows from that one fact.
 ### Why — arithmetic, not a coding mistake
 
 The network is recurrent over 111 timesteps. Backpropagation multiplies 111
-step-by-step sensitivities together. If each is a little above 1 — say 1.4 — then
+step-by-step sensitivities together. If each is a little above 1 (say 1.4), then
 1.4 to the power 111 is 3e16. That is what comes out.
 
 And 3e16 cannot be a real slope. The loss is a cross-entropy over four classes,
@@ -98,8 +98,8 @@ means the backward pass is amplifying floating-point noise.
 
 **I checked the obvious suspect and it was not it.** The forward pass uses a hard
 on/off spike while the backward pass uses a smooth stand-in, and that mismatch is
-the usual thing to blame. Running the smooth version in the forward pass too —
-making the network genuinely differentiable — made it **worse**: 3.11e16 against
+the usual thing to blame. Running the smooth version in the forward pass too
+(making the network genuinely differentiable) made it **worse**: 3.11e16 against
 1.21e6.
 
 **I tried the standard remedy and it was not enough.** Truncating the backward
@@ -118,7 +118,7 @@ settings that act on every neuron at every timestep.
 ### The fix
 
 **Measure it.** The network's sensitivity now comes from moving each of the five
-numbers a little and seeing what the loss does — ten forward passes, all real.
+numbers a little and seeing what the loss does: ten forward passes, all real.
 
 That is not a retreat from what this project claims; it is the claim applied
 consistently. The forward pass is never a stand-in, and derivatives are estimated
@@ -140,9 +140,9 @@ checker exercises and because the measurement above should stay reproducible.
 ## 2. The objective was not reproducible — also fixed
 
 Before finding the direction problem I chased a different, real one: the loss was
-not a function. Nudging the four numbers by one part in a million million — about
-ten femtometres of film thickness, a hundredth of an atom — moved the loss by
-0.0056.
+not a function. Nudging the four numbers by one part in a million million
+(about ten femtometres of film thickness, a hundredth of an atom) moved the loss
+by 0.0056.
 
 **My first explanation was wrong.** I said it came from the steepness of the
 current curve at the read voltage, caused by the open solver rebuilding its mesh
@@ -150,7 +150,7 @@ for every device. Measured:
 
 - The solver is **deterministic**. Run twice at the same device with the cache
   emptied, it returns bit-identical curves. The mesh is not jumping.
-- Under that nudge the steepness moves by 1e-16 or less — one of the steadiest
+- Under that nudge the steepness moves by 1e-16 or less: one of the steadiest
   numbers in the set.
 - What moves is the **threshold voltage on the reverse sweep**: 23 millivolts.
   Nothing else moves at all.
@@ -161,9 +161,9 @@ for every device. Measured:
 > 4.5e-19 amps**. Nothing above that moves, anywhere.
 
 That is the deep-off end of the sweep at −3.5 V, where the electron density is
-about 1e-2 per cubic centimetre against 1e20 in the contacts — sixty decimal
-places of range inside one matrix, against the sixteen ordinary arithmetic
-carries. What comes back is drift, not a current.
+about 1e-2 per cubic centimetre against 1e20 in the contacts. That is sixty
+decimal places of range inside one matrix, against the sixteen ordinary
+arithmetic carries. What comes back is drift, not a current.
 
 The curve reader's floor sat at **1e-20 amps**, *below* the drift. So the drift
 kept its shape, kept a slope, and the window that picks out the subthreshold
@@ -187,7 +187,7 @@ The floor is now **1e-16 amps**. Both bounds measured, over seven devices:
 
 ### It cured the bug your first instruction was catching
 
-**rand0's threshold went from +4.16 V — outside a sweep that stops at +1.50 V —
+**rand0's threshold went from +4.16 V (outside a sweep that stops at +1.50 V)
 to +0.62 V**, and its memory window from a fictitious 4.44 V to 0.853 V. **Every
 device now converges; nothing is refused.**
 
@@ -200,7 +200,7 @@ something that no longer happens.
 ## 3. Retraining at every device was destroying the signal
 
 With the floor raised, the five numbers became reproducible to seven decimal
-places — and the loss still swung by 0.038. All of that was the network's
+places, and the loss still swung by 0.038. All of that was the network's
 training.
 
 The network was retrained from scratch at every design point. That is chaotic:
@@ -213,7 +213,7 @@ two nearly identical devices send the training down different paths. And it gets
 | 400 | 1.163 | 0.69 | 8.2e-3 |
 | 800 | 0.982 | 0.75 | 2.4e-2 |
 
-Decaying the learning rate does not fix it either — measured, it helps slightly
+Decaying the learning rate does not fix it either: measured, it helps slightly
 at 150 steps and is worse at 300.
 
 ### The measurement that decided it
@@ -229,13 +229,13 @@ at 150 steps and is worse at 300.
 
 Two things there, and the second matters more:
 
-1. Retraining from scratch is noisy — signal only 2.7 times the noise.
+1. Retraining from scratch is noisy: signal only 2.7 times the noise.
 2. **Retraining from scratch destroys four fifths of the signal.** Training
    partly compensates for a bad device, so every device ends up scoring about
    the same. An objective for co-design must do the opposite.
 
 The network is now fitted **once**, at a fixed reference device. Three modes:
-**frozen** (no per-device training — what your thesis does, and it makes the
+**frozen** (no per-device training, what your thesis does, and it makes the
 gradient's "hold the weights fixed" step exactly valid), **adapt** (a short tune
 per device), **scratch** (the old behaviour, kept so old runs replay). The
 flagship ran frozen: a design point costs about a second of network time instead
@@ -246,13 +246,13 @@ of 330.
 ## 4. The two trims (your second instruction)
 
 Both were needed, both are real, and neither was the cause of the backwards
-gradient — I said so at the time and it held up.
+gradient. I said so at the time and it held up.
 
 **The leak-bias trim.** The leak voltage was frozen at one value and applied to
 every device while the design range moves the threshold by whole volts. The leak
 current spanned **nine and a half factors of ten**, and the membrane decay came
 back as exactly 0 or exactly 1 over most of the range, derivative exactly zero.
-The trim works in decades — your own convention — and squashes the result
+The trim works in decades (your own convention) and squashes the result
 smoothly into the band where the network behaves. Smooth, never a hard clip: a
 clip is flat outside its range and would hand back exactly zero slope on the
 devices that most need one.
@@ -261,13 +261,13 @@ Result: membrane decay went from pinned at one end or the other to **0.583 to
 0.626**, with a live slope everywhere.
 
 **And an agreement comes back.** Your LSNN's membrane decay is 0.6065. The
-trimmed nominal device gives **0.6057** — one part in a thousand. Not arranged:
+trimmed nominal device gives **0.6057**: one part in a thousand. Not arranged:
 the band came from a gradient measurement that knew nothing about your LSNN.
 Before the trim the four-knob nominal device gave 0.9592 and that agreement had
 quietly been lost.
 
 **The synapse-mirror trim.** The firing threshold goes as one over the device's
-on-conductance, four times larger at the leaky corner, so it fell to 1.22 — a
+on-conductance, four times larger at the leaky corner, so it fell to 1.22: a
 neuron firing on roughly its first input spike. Your own configuration file
 predicted this in the note frozen onto `K_syn`. It now spans **3.86 to 5.14**,
 and the frozen "five spikes to fire" is preserved exactly.
@@ -281,8 +281,7 @@ the decay from a property of one training run:
 | seed 1 | — | — | 368 | — | 139 | 2.1e4 | — | — | — |
 
 **The low side is not explained.** 0.50 is worse than 0.30, out of order, and it
-survived both a short and a long training run. I kept away from it rather than
-explain it.
+survived both a short and a long training run. I did not try to explain it.
 
 ---
 
@@ -318,7 +317,7 @@ nominal 7.0 nm.
 >
 > The free arm never optimised. Its first Nelder-Mead restart started at the
 > standardised origin, where SciPy builds an initial simplex 2.5e-4 wide against
-> a tolerance of 1e-4, so it returned its own starting point — and that starting
+> a tolerance of 1e-4, so it returned its own starting point, and that starting
 > point was the cloud's own centroid. Measured: the `phi*` in
 > `v6_manifold_control_d4.json` equals the cloud mean to 1.7e-14. So this
 > section does not report a free optimum. It reports the loss at the AVERAGE
@@ -327,7 +326,7 @@ nominal 7.0 nm.
 >
 > Re-run properly (differential evolution, then a polish with an explicit
 > non-degenerate simplex), the numbers move a long way and **the conclusion
-> reverses in this project's favour** — the gate PASSES at 8.6%, not 0.79%.
+> reverses in this project's favour**: the gate PASSES at 8.6%, not 0.79%.
 > See `docs/D5_FINDINGS.md` §2 and `results/runs/v6_manifold_control_d5.json`.
 > The paragraphs below are kept so the correction has something to point at.
 
@@ -342,7 +341,7 @@ design range: **two directions carry 90% of the variation.** Four knobs, and onl
 about two effective dimensions of freedom.
 
 Optimising the five numbers freely lands **1.9 typical device-spacings off that
-sheet** — it describes a device nobody can build.
+sheet**: it describes a device nobody can build.
 
 | strategy | solver calls | loss |
 |---|---:|---:|
@@ -351,7 +350,7 @@ sheet** — it describes a device nobody can build.
 | best of 192 devices sampled across the range | 192 | 1.0221 |
 | **descend through the solver (this project)** | **64** | **1.0177** |
 
-**Gradient descent through the solver wins on both counts** — a better device,
+**Gradient descent through the solver wins on both counts**: a better device,
 with a third of the solver calls. Projecting the free optimum onto reality is the
 *worst* of the four.
 
@@ -366,14 +365,14 @@ the margin.** Descending through the solver found a better device than 192
 evenly-spread ones using **a third of the solver calls**, and the device it
 found beats every one of those 192. That is the claim to make.
 
-The margins between all four strategies are small — 0.008 from best to worst.
-That is worth stating too, because it means "which device you pick matters less
-than how many calls it costs you to pick it" on this task, and overselling the
-margin would be the easiest thing for a judge to knock down.
+The margins between all four strategies are small: 0.008 from best to worst.
+That also means "which device you pick matters less than how many calls it
+costs you to pick it" on this task, and overselling the margin would be the
+easiest thing for a judge to knock down.
 
 A caveat that belongs with the table: the free and projected arms were scored
 with the same frozen network as everything else, and the free arm's optimiser
-was a derivative-free search that may not have found the true free optimum — its
+was a derivative-free search that may not have found the true free optimum. Its
 1.0186 is an upper bound on how good "free" can be, so the gap to joint could be
 smaller than it looks, not larger.
 
@@ -393,7 +392,7 @@ thing here. Three random seeds.
 | random search | 1.030066 | 1.027038 | 1.036441 |
 | Nelder-Mead from the same corner | 1.048191 | 1.048191 | 1.048191 |
 
-**Read it honestly, because the interesting part is not simply "we won".**
+**Read it honestly.**
 
 **Bayesian optimisation's best run beats us**, by 2.7e-5, which is nothing. On
 its *typical* run it is 0.0033 behind. So the fair statement is: **gradient
@@ -401,14 +400,14 @@ descent reaches, every single time, the best score that a well-tuned Bayesian
 optimiser reaches on its luckiest run.** Its median is better and its spread is
 zero.
 
-Two arms have no randomness — gradient descent and Nelder-Mead both start from a
+Two arms have no randomness: gradient descent and Nelder-Mead both start from a
 fixed corner and follow a deterministic rule, so all three seeds give the same
-answer. That is a property worth reporting, not a defect: the other methods are
-being *averaged over their own luck* and these two have none to average.
+answer. That is a property, not a defect: the other methods are being *averaged
+over their own luck* and these two have none to average.
 
 **Nelder-Mead is the arm that matters most**, and it is last by a wide margin.
-It is what a sensible engineer does when the simulator has no derivative —
-derivative-free local search — and from a bad starting corner it gets stuck and
+It is what a sensible engineer does when the simulator has no derivative
+(derivative-free local search), and from a bad starting corner it gets stuck and
 stays stuck. That gap, 1.048 against 1.018, is the clearest thing in the table.
 
 **Bayesian optimisation was deliberately given the advantage** of a warm start
@@ -429,9 +428,9 @@ The race was run again at a **20-call** budget. The ordering reverses:
 | **gradient descent** | **1.038718** | **1.017666** |
 | Nelder-Mead | 1.059021 | 1.048191 |
 
-**At 20 calls gradient descent is fourth of five.** The reason is plain and it is
-not a defect: building the solver's Jacobian by finite differences costs **nine
-calls before a single step is taken**. Out of twenty that is half the budget
+**At 20 calls gradient descent is fourth of five.** The reason is plain: building
+the solver's Jacobian by finite differences costs **nine calls before a single
+step is taken**. Out of twenty that is half the budget
 spent before the method does anything, and it manages two steps. Random search
 gets twenty independent looks at the box.
 
@@ -440,7 +439,7 @@ solver wins once the budget is large enough to pay for the derivative, and the
 crossover on this problem sits somewhere between 20 and 64 calls.** Below it,
 just sampling the box is better.
 
-That is worth saying out loud rather than only showing the budget where we win.
+Better to say that plainly than only show the budget where we win.
 It is also the expected shape for any derivative-based method on a
 four-dimensional problem, and the effect gets *better* for us as dimensions grow,
 because a Jacobian costs 2D+1 calls while covering a box costs exponentially many.
@@ -465,7 +464,7 @@ someone reading the raw log would otherwise trust them.
 - **Open solver, nine devices.** Eight solve; the ninth is the exact thickest
   film allowed, 15.0 nm, which has failed since D3 and is not a regression.
 - **Commercial solver, eight devices.** All pass. Numbers unchanged from
-  yesterday, as expected — the new floor sits below anything those curves reach.
+  yesterday, as expected: the new floor sits below anything those curves reach.
 - **All 155 tests pass**, including three new ones pinning reproducibility
   directly. The fixture needed care: *additive* noise does not reproduce the
   failure, so the test would have passed for the wrong reason. With realistic
@@ -480,8 +479,8 @@ someone reading the raw log would otherwise trust them.
 
 The free solver and the commercial one were differenced at the same design point
 and their sensitivities compared. Only **film thickness** reaches the commercial
-deck — the other three knobs are baked into its mesh and come back as exactly
-zero — so that is the only column that carries information.
+deck. The other three knobs are baked into its mesh and come back as exactly
+zero, so that is the only column that carries information.
 
 | figure of merit | commercial | open | same direction? |
 |---|---:|---:|:---:|
@@ -493,9 +492,9 @@ zero — so that is the only column that carries information.
 | high conductance | +0.044 | +0.489 | yes |
 | conductance slope | −1.701 | −1.159 | yes |
 
-**Seven out of seven.** The magnitudes differ — they are different physical
+**Seven out of seven.** The magnitudes differ (they are different physical
 models, one a 2-D drift-diffusion solve with a meshed ferroelectric and one the
-commercial reference — but every single figure of merit moves the same way with
+commercial reference), but every single figure of merit moves the same way with
 film thickness on both. That is the claim that matters: the optimisation is
 being steered by physics, not by one solver's numerics.
 
@@ -508,12 +507,12 @@ the one column that exists.
 
 ## 8. What needs your sign-off
 
-**One — the two trims.** They are what makes the gradient exist across the whole
+**One: the two trims.** They are what makes the gradient exist across the whole
 design range. The cost is that the membrane decay now moves over a range of 0.04
 instead of 0 to 1, so less of the device reaches the network. That is what a real
 chip's bias trims do, but it changes what the project optimises.
 
-**Two — fitting the network once instead of at every device.** This changes the
+**Two: fitting the network once instead of at every device.** This changes the
 question from "how well can a network trained on this device do" to "how well
 does a deployed network do on this device". Your thesis asks the second question,
 and the measurement says it carries four times more signal.
@@ -521,7 +520,7 @@ and the measurement says it carries four times more signal.
 Both are single switches with the measurements written next to them.
 
 **And this follows from both:** every loss number from before today answers a
-different question. Not wrong — different. They cannot share a table.
+different question. Not wrong, different. They cannot share a table.
 
 ---
 

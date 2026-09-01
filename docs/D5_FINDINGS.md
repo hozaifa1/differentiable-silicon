@@ -23,24 +23,24 @@ Words used below, beyond D4's list:
 Four things were asked for. All four are done, and one of them turned up a
 mistake in yesterday's headline that is worth more than the task itself.
 
-1. **Figure 1 is drawn** — `docs/figures/fig1_pca_manifold.png` and `.pdf`.
+1. **Figure 1 is drawn**: `docs/figures/fig1_pca_manifold.png` and `.pdf`.
 2. **The budget sweep located the crossover.** 75 runs, 3.04 h. There are three
    crossovers, not one: gradient descent overtakes Latin hypercube between 20 and
    32 calls, random search between 32 and 48, and a warm-started Bayesian
    optimiser between 48 and 64. The better finding is that **it is the only arm
-   that converts extra budget into performance at all** — random search is flat
+   that converts extra budget into performance at all**. Random search is flat
    to six decimal places from 12 calls to 48. Figure 2 draws it. See §3.
 3. **The H-ablation says the transducer is carrying physics.** Scramble which
    figures of merit each of the five numbers responds to, keeping every response
    magnitude exact, and the optimiser recovers 32% of the memory window, half the
-   accuracy, stalls at 40 of its 64 calls — and moves one of the four fabrication
+   accuracy, stalls at 40 of its 64 calls, and moves one of the four fabrication
    knobs in the wrong direction. See §4.
-4. **All four Tesseracts smoke-test clean and all 155 tests pass** — see §5.
+4. **All four Tesseracts smoke-test clean and all 155 tests pass**; see §5.
 
 **And the correction, which is the important part.** Yesterday's answer to the
 single strongest objection to this project was built on a free optimiser that
 never actually optimised. Re-run properly, every number in that table moves, and
-**the D5 gate you set — beat the projected baseline by 5% — now passes at 8.6%,
+**the D5 gate you set (beat the projected baseline by 5%) now passes at 8.6%,
 having "failed" yesterday at 0.79%.** Details in §2. Nothing about the pipeline
 changed; only the baseline was being measured wrongly, and it was being measured
 wrongly in a direction that *flattered the objection*, not us.
@@ -66,7 +66,7 @@ direction instead of the second, because any single 2-D view of a 5-D set can be
 accused of being the one projection that made the point. It is outside in both.
 
 **(c) And here is why it cannot be built.** Two of the five coordinates are
-outside the range 192 devices spanning the whole box can reach — not near the
+outside the range 192 devices spanning the whole box can reach. Not near the
 edge, outside:
 
 | | phi\* | what devices can reach |
@@ -74,10 +74,10 @@ edge, outside:
 | max conductance | 9.17e-05 S | 1.09e-04 … 8.07e-04 S |
 | weight noise | 0.265 | 0.064 … 0.236 |
 
-The mechanism is worth stating in words, because it is not subtle. **phi\* wants
+The mechanism is not subtle. **phi\* wants
 g_max/g_min = 1.03.** Real devices in this box span 2.2 to 6.5e7, median 290. The
 free optimum is asking for a ferroelectric memory whose two stored states conduct
-almost identically. That is not a hard device to fabricate — it is not a memory
+almost identically. That is not a hard device to fabricate. It is not a memory
 at all. The objection says "then find the device that makes phi\*". There is no
 such device, and this is the reason.
 
@@ -96,7 +96,7 @@ z0 = Z[rng.integers(len(Z))] if r else Z.mean(0)
 
 `Z` is standardised by that same cloud, so `Z.mean(0)` is **exactly** the zero
 vector. SciPy's Nelder-Mead builds its initial simplex by perturbing each
-coordinate of the start by 5% — except a coordinate that is exactly zero, which
+coordinate of the start by 5%, except a coordinate that is exactly zero, which
 it perturbs by `zdelt = 0.00025` instead. Every coordinate here is exactly zero.
 So the initial simplex is 2.5e-4 across against a convergence tolerance `xatol`
 of 1e-4. It was converged before it started, and it returned its own starting
@@ -107,13 +107,13 @@ point. The five genuine restarts that followed never beat it.
 
 So that file does not record a free optimum. It records **the loss at the average
 device**. And "phi\* sits 1.9 typical device-spacings off the sheet" is really
-"the centroid of a curved cloud is 1.9 spacings from the cloud" — true, and
+"the centroid of a curved cloud is 1.9 spacings from the cloud", true and
 nearly content-free, because the centroid of any curved sheet lies off it.
 
 This mattered because that section is the answer to the strongest objection
 anybody raises, and Figure 1 was to be built on it. An objection answered with a
 number that does not mean what it says is worse than an objection not answered.
-Drawn with the old file, Figure 1 puts phi\* in the dead centre of the cloud —
+Drawn with the old file, Figure 1 puts phi\* in the dead centre of the cloud, so
 it *disproves* the claim it was meant to support.
 
 ### What was done instead
@@ -130,7 +130,7 @@ judge does:
 - plus polishes from the cloud centroid and from the best real device, so the old
   answer is still in the running and can only be beaten, never lost.
 
-4,519 network evaluations, no solver calls — the manifold cloud already paid for
+4,519 network evaluations, no solver calls: the manifold cloud already paid for
 those. The search box is the cloud's own range padded by one standardised unit
 per coordinate, recorded in the output file. Free means free of the device, not
 free of arithmetic; letting it run to infinity would find the corner where the
@@ -149,14 +149,14 @@ be a strawman in our own favour.
 
 Read it carefully, because two things move in opposite directions:
 
-**The free arm got better and now beats us** — 1.0033 against our 1.0177. That is
+**The free arm got better and now beats us**, 1.0033 against our 1.0177. That is
 expected and it is not a loss. Free optimisation has five unconstrained numbers
 against our four physical knobs; its score is a **lower bound that nothing
 physical can beat**, and D4 already said so. It is also the first phi in this
 project to reach **0.750 accuracy** where everything buildable sits at 0.688. It
 is a genuine optimum, not a degenerate corner.
 
-**The projected arm got much worse** — 1.1128 against yesterday's 1.0258. This is
+**The projected arm got much worse**, 1.1128 against yesterday's 1.0258. This is
 the number that carries the argument, and the mechanism is clean: yesterday it
 was projecting the cloud's own centroid, which is by construction a middling
 device and therefore scores respectably. A *real* free optimum sits far outside
@@ -185,7 +185,7 @@ was a verdict on a baseline that had not been computed.
 **And the caveat that must travel with it.** The gap between joint and projected
 is now large *because the free optimum is genuinely far away*, and "nearest in a
 standardised Euclidean metric" is a naive way to project. A smarter engineer
-would not project at all — they would notice phi\* is unreachable and go
+would not project at all. They would notice phi\* is unreachable and go
 searching. That strategy is also on the table, it is the "best of 192" row at
 1.0221, and joint descent still beats it with a third of the calls. Say both.
 
@@ -219,7 +219,7 @@ Median best balanced cross-entropy over three seeds:
 
 Before anything new: budgets 20 and 64 were re-run through the new driver and
 returned **1.038718** and **1.017666** for the gradient arm, **1.048191** for
-Nelder-Mead, **1.036441** and **1.018232** for random and LHS at their D4 seeds —
+Nelder-Mead, **1.036441** and **1.018232** for random and LHS at their D4 seeds,
 identical to the banked race. The sweep and the banked race are measuring the
 same thing.
 
@@ -250,19 +250,19 @@ Below 20 calls this project is fourth of five and that must be stated.
 
 Random search is flat **to six decimal places** from 12 calls through 48. The
 best point in its first twelve draws is still the best after forty-eight. LHS is
-not even monotone — it is *worse* at 32 than at 12. Bayesian optimisation
+not even monotone: it is *worse* at 32 than at 12. Bayesian optimisation
 improves, but by 0.016 across the whole range against the gradient arm's 0.056.
 
 The honest qualifier: each arm's draws are a nested sequence at a fixed seed, so
 "random at 48" contains "random at 12" as a prefix rather than being an
-independent run. That is the right comparison for a budget sweep — it is what
-"give the same method more money" means — but it is why the flatness is a
+independent run. That is the right comparison for a budget sweep, since it is what
+"give the same method more money" means, but it is why the flatness is a
 statement about the objective's shape as much as about the method. The objective
 has a broad shallow basin that a dozen uniform draws already find, and a floor
 inside it that only a directed method reaches.
 
 **That is the sample-efficiency claim in its strongest and most defensible form.**
-Not "we win" — at four of the five budgets we do not. It is: *the derivative-free
+Not "we win"; at four of the five budgets we do not. It is: *the derivative-free
 arms saturate, and this one does not.* Everything about the trade improves with
 dimension, because a Jacobian costs 2D+1 calls while covering a box costs
 exponentially many, and D = 4 is the least favourable end of that.
@@ -277,8 +277,8 @@ exponentially many, and D = 4 is the least favourable end of that.
   20 and 33 at budget 32 (exactly 12, 48 and 64 at the others), because the cap
   is tested before a step and a forced Jacobian refresh can carry it past.
   That is a ~10% overrun, and it happens at precisely the budgets where this
-  project *loses* — so it makes our reported score at those budgets slightly
-  too generous, not too harsh. Worth disclosing for that reason.
+  project *loses*, so it makes our reported score at those budgets slightly
+  too generous, not too harsh. That is the reason to disclose it.
 
 ---
 
@@ -288,7 +288,7 @@ exponentially many, and D = 4 is the least favourable end of that.
 
 V2 checks that the composed gradient agrees with a finite difference of the
 composed loss. That proves the chain rule is **implemented**. It does not prove
-the middle link means anything — a chain rule assembled from three consistent but
+the middle link means anything: a chain rule assembled from three consistent but
 physically arbitrary maps would pass V2 exactly as well.
 
 So replace the middle link with noise. `J_H = dH/dy` is the 5x7 Jacobian of the
@@ -332,7 +332,7 @@ Both are genuinely scrambled: mean cosine against the true `J_H` is **+0.056**
 | frobenius | 1 | → 1.147149 | → 0.500 | → 87.2 | → 0.472 | 45 | 4 of 9 |
 | frobenius | 2 | → **1.399577** | → 0.250 | → 71.1 | → 0.415 | 25 | **0 of 5** |
 
-**The control reproduces the flagship exactly** — 1.017666, accuracy 0.688, 64
+**The control reproduces the flagship exactly**: 1.017666, accuracy 0.688, 64
 calls. The ablation harness is not changing the answer.
 
 How much of the control's improvement a random `J_H` recovers, at the median:
@@ -344,7 +344,8 @@ How much of the control's improvement a random `J_H` recovers, at the median:
 | **frobenius random** | **0%** | **0%** | **0%** |
 
 **The loss does still fall**, which is what the BUILD_SPEC predicted and what
-makes this a real test rather than a formality — four knobs in a box with a trust
+makes this a real test rather than a formality, since four knobs in a box with a
+trust
 region will find *something*. But it recovers a third of the memory window, half
 the accuracy, and it **cannot spend its budget**: every ablated run stalls, using
 40–45 of 64 calls against the control's 64, because the random directions keep
@@ -367,7 +368,7 @@ Three things, and the third is the sharpest:
    Jacobian; 17.800 → 17.75 under a random one. That knob is simply not found.
 3. **The interlayer moves the WRONG WAY.** The control thins it, 1.550 → 1.374,
    which improves gate coupling. Every ablated run *thickens* it, to 1.645–1.666.
-   A random `J_H` does not merely fail to find the design — on one of the four
+   A random `J_H` does not merely fail to find the design. On one of the four
    fabrication knobs it walks in the opposite direction.
 
 ### A correction to what the BUILD_SPEC expected
@@ -382,7 +383,7 @@ backwards:
 | rowwise | +16.1 | +0.052 |
 | frobenius | 0 | 0 |
 
-**The true gradient raises SS the most.** That is not a failure — it is a
+**The true gradient raises SS the most.** That is not a failure. It is a
 coherent physical trade, and it is the interesting part of the result. A thicker
 HZO film and a thinner interlayer buy a larger memory window at the cost of
 electrostatic control, so the subthreshold slope degrades. The network needs the
@@ -406,7 +407,7 @@ step**.
 
 ### Containers
 
-`scripts/smoke_tesseracts.py` — new, and it is the check that was missing. The
+`scripts/smoke_tesseracts.py` is new, and it is the check that was missing. The
 four Tesseracts are what a judge actually runs, and between them they carry three
 schema surfaces and four import paths that nothing else exercises. A field
 renamed in one schema and not the other shows up when somebody else tries to
@@ -414,7 +415,7 @@ serve the container, not in our optimiser logs.
 
 **22 of 22 checks pass, in 32 seconds.** Per Tesseract: the module imports on its
 own; both schemas build; `apply` returns finite numbers; and **`abstract_eval`
-agrees with what `apply` actually returns** — same keys, same shapes, same
+agrees with what `apply` actually returns**: same keys, same shapes, same
 dtypes. That last one is the check that earns its keep, because `abstract_eval`
 is hand-written and a mismatch breaks tesseract-jax's tracing with an error that
 points at the caller rather than at the file.
@@ -436,8 +437,8 @@ Two of the shim's checks are not smoke tests but assertions with content:
   README.
 
 One thing found and fixed while writing it: the smoke test first ran with
-`batch=4`, which misses the cached reference weights — their disk key includes
-the batch size — and silently re-ran an 800-step fit. Twenty minutes to smoke
+`batch=4`, which misses the cached reference weights (their disk key includes
+the batch size) and silently re-ran an 800-step fit. Twenty minutes to smoke
 test one endpoint. It now uses `batch=16`, which is what every banked run used.
 
 ### Tests
@@ -458,8 +459,8 @@ The two conductances are **exactly** zero. That is not a bug and it is the
 known behaviour of `SNN_VJP=fd` on a hard-spike network: the loss is piecewise
 constant in phi, and a finite-difference step that does not flip a single spike
 anywhere in 111 timesteps returns exactly zero change. It is the same fact that
-`FlagshipConfig.min_radius` exists to handle. Worth knowing that it can happen at
-a reported point, not just in the middle of a run.
+`FlagshipConfig.min_radius` exists to handle. It can happen at a reported point
+as well as in the middle of a run.
 
 ---
 
@@ -471,7 +472,7 @@ frozen network changed every loss number. The old measurement was **8 design
 points and one seed**.
 
 `scripts/fom_correlations_d5.py` re-measures it on **192 devices**, on the
-current objective, with zero solver calls — the manifold cloud has the figures of
+current objective, with zero solver calls: the manifold cloud has the figures of
 merit and the V6 refit has their losses.
 
 | quantity | Pearson r | R² alone | Spearman |
@@ -488,9 +489,9 @@ merit and the V6 refit has their losses.
 | firing threshold | −0.061 | 0.004 | −0.164 |
 | **memory window** | **−0.108** | **0.012** | **−0.085** |
 
-**The best single predictor explains 15% of the variation.** The memory window —
+**The best single predictor explains 15% of the variation.** The memory window,
 the first number any device engineer reaches for, and the thing a FeFET paper
-would headline — explains **1%**.
+would headline, explains **1%**.
 
 And the fair upper bound on any shortcut: **all seven figures of merit in one
 linear model give R² = 0.354**, fitted and scored on the same 192 points, so it

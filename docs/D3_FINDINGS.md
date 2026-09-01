@@ -40,12 +40,12 @@ All four jobs on the list ran. Here is the state of things.
 6. **The gradient comes back as 6e13 when the loss is about 1**, so the
    optimiser's judge is meaningless and it spends its budget rebuilding the same
    gradient. Section 4b said why. **The "why" in section 4b was WRONG and has
-   been corrected on 2026-08-27** — it blamed the circuit, and the circuit is
+   been corrected on 2026-08-27.** It blamed the circuit, and the circuit is
    fine. It is the spiking network, plus one poisoned neighbouring device.
    Read the corrected section 4b, and `docs/D4_FINDINGS.md`.
 7. **I found a second bug in the curve reading.** I did NOT fix it, on purpose.
 
-**Two things need your decision** — section 6.
+**Two things need your decision** (section 6).
 
 ---
 
@@ -84,7 +84,7 @@ one:
 So the unusable part is a razor-thin sliver at the very top of the range.
 
 **Why it fails.** At −3.25 V the device is fully off. The current is 2e-19 amps,
-which is not a real number — it is smaller than anything you could ever measure.
+which is not a real number: it is smaller than anything you could ever measure.
 The electron count in the channel drops to about 0.015 per cubic centimetre,
 while the source and drain sit at 1e20. That is sixty-odd decimal places between
 the largest and smallest numbers in the same matrix. A computer using ordinary
@@ -99,7 +99,7 @@ I checked three things so I am not guessing:
 - **It is not the order.** Ramping the gate first and the drain second gets to
   −3.5 V, and then fails on the drain instead. Both routes hit the same wall.
 - **It is not rounding.** DEVSIM has an extended-precision mode. Turning it on
-  changes nothing. It also turns out this build cannot use it at all — see the
+  changes nothing. It also turns out this build cannot use it at all. See the
   note on SuperLU below.
 
 **What I did about it.** Nothing to the physics. Changing the model would change
@@ -118,7 +118,7 @@ counts as a failed check, so nothing is quietly passed.
 
 **The optimiser used to blame the wrong thing.** When a device failed to solve,
 the optimiser caught it and wrote "we ran out of calls" into the run log. That
-was wrong, and it was wrong confidently — the run had plenty of calls left. Both
+was wrong, and it was wrong confidently: the run had plenty of calls left. Both
 problems raised the same generic error, so the optimiser could not tell them
 apart. They now raise two different errors and cannot be confused.
 
@@ -133,9 +133,9 @@ device in real units.
 
 Files touched:
 
-- `src/diffsilicon/shim/adjoint.py` — new error type for "out of calls"
-- `src/diffsilicon/optimise.py` — handle a failed device as a rejected step
-- `scripts/rebaseline_d3.py` — record a failed device, keep going
+- `src/diffsilicon/shim/adjoint.py`: new error type for "out of calls"
+- `src/diffsilicon/optimise.py`: handle a failed device as a rejected step
+- `scripts/rebaseline_d3.py`: record a failed device, keep going
 
 All 129 tests still pass.
 
@@ -156,8 +156,8 @@ template into a pattern and matching it against a file that actually ran reads
 each value straight back out. That is reading, not reconstructing.
 
 Eleven constants came back, and every file on disk agreed on all of them. Two
-more — the film thickness the mesh was built at (7.0 nm) and the film's
-background permittivity (33.0) — are written down in `docs/D3_RECALIBRATION.md`
+more, the film thickness the mesh was built at (7.0 nm) and the film's
+background permittivity (33.0), are written down in `docs/D3_RECALIBRATION.md`
 in plain text, so those came from your own notes.
 
 **Then I proved it.** I re-rendered the simulation file at the same device the
@@ -179,8 +179,8 @@ Everything else was character-for-character identical. So the recovery is exact.
 | time | 221 seconds |
 
 For comparison, on 24 August the same solver gave 68.1 mV/dec and 2.132 V. Those
-came from a slightly different device — a 6 nm film with the old, unlocked
-polarization — so they should be close but not equal, and they are. The file is
+came from a slightly different device (a 6 nm film with the old, unlocked
+polarization), so they should be close but not equal, and they are. The file is
 good.
 
 The recovered file has a comment at the top saying it was recovered and how.
@@ -208,7 +208,7 @@ Two things fall straight out of that table.
 **The memory window grows steadily with film thickness, and nothing else moves
 it.** rand3 and rand4 have almost the same film (13.57 and 13.63 nm) but very
 different gate lengths (21 and 42 nm) and different doping. Their windows are
-3.326 and 3.325 V — the same to three decimal places. That is the known limit,
+3.326 and 3.325 V, the same to three decimal places. That is the known limit,
 now visible in the data: only thickness reaches the commercial solver. Gate
 length, doping and the thin oxide layer are baked into the mesh and this driver
 does not rebuild it per device.
@@ -217,7 +217,7 @@ does not rebuild it per device.
 the biggest window of the eight. So that device is not physically impossible. It
 is just out of reach for the free solver's arithmetic.
 
-The curves are saved in `results/cache/sentaurus/` — eight records, each holding
+The curves are saved in `results/cache/sentaurus/`, eight records, each holding
 the actual current values at all 96 voltages for both sweep directions. I checked
 what is inside them: the curves, the seven extracted numbers, and a hash. **No
 deck, no fitted constants, no file names.** That is exactly what you said could
@@ -251,7 +251,7 @@ times the free solver's, consistently, across a film thickness range of nearly
 3x. Both solvers agree the window grows with thickness.
 
 **The two odd ones out are exactly the two devices whose curve reading is
-suspect** — rand0, the one with the threshold outside the sweep, and rand2, the
+suspect**: rand0, the one with the threshold outside the sweep, and rand2, the
 one reading below the physical floor. That is a useful cross-check on its own:
 the points that break the pattern are the points already flagged as unreliable,
 not random noise.
@@ -275,7 +275,7 @@ any of the others by a factor of four, and larger than the honest devices by
 about eight. It is not real.
 
 The device in question has SS = 431 mV/dec. That means it has no proper off
-region at all — it never really switches off, so there is no threshold there to
+region at all: it never really switches off, so there is no threshold there to
 find. Low doping on a short gate. The reader had nothing to work with and
 extended a line instead of saying so.
 
@@ -328,7 +328,7 @@ genuinely reduced the loss and raised accuracy from 0.375 to 0.500. What it did
 not do is descend. The reason is the next section, and it is measured, not
 guessed.
 
-Two honest differences from D2 worth stating together: D2 was allowed to change
+Two honest differences from D2, taken together: D2 was allowed to change
 the *material* (polarization and coercive field), which are now locked, and D2
 did not have this gradient problem in the same form. So the D2 number cannot be
 quoted as this project's result, and this run is not yet a replacement for it.
@@ -456,7 +456,7 @@ the licence was free all evening, and each point takes about 200 seconds. The
 comparison needs nine commercial-solver points, so roughly 30 minutes.
 
 **I did not run it.** It was not on tonight's list, and it is the middle of your
-working day — holding your single shared licence for another half hour without
+working day. Holding your single shared licence for another half hour without
 being asked is not my call. The licence is free right now and I left no stray
 processes on the machine.
 
@@ -471,8 +471,8 @@ comment says SuperLU "is always a valid fallback".
 
 On this machine it is not. Setting it succeeds silently, and then the first solve
 dies with `Solver "superlu" not supported in this build`. So the fallback moves
-the crash rather than preventing it. It may well be present in the Linux build —
-worth checking before trusting that change.
+the crash rather than preventing it. It may well be present in the Linux build.
+Check it before trusting that change.
 
 **One device reads below the physical floor.** One point came back at 36.9
 mV/dec. For an ordinary transistor about 60 is the floor at room temperature.
@@ -483,28 +483,28 @@ this model should not produce it. Worth a look, not urgent.
 
 ## 6. What needs your decision
 
-**One — the gradient cliff (section 4b). This is blocking the headline result.**
+**One: the gradient cliff (section 4b). This is blocking the headline result.**
 
-> **SUPERSEDED 2026-08-27.** The suggestion that used to be here — put the
-> leakage current on a log scale before it reaches the membrane decay — was
+> **SUPERSEDED 2026-08-27.** The suggestion that used to be here (put the
+> leakage current on a log scale before it reaches the membrane decay) was
 > aimed at the wrong link, because the diagnosis above it was wrong. Measured,
 > the leakage path contributes 0.003 of a total of 7.8, so rescaling it could
 > never have fixed a gradient of 6e13. The two things that were actually wrong,
 > and what was done about them, are in `docs/D4_FINDINGS.md`. The log scale was
-> still worth doing, for a different reason, and it was done — but as a fix for
+> still worth doing, for a different reason, and it was done, but as a fix for
 > the membrane decay being pinned flat, not as a fix for the size of the
 > gradient.
 
-**Two — the 26x polarization shrink on the open solver.** You had left this
+**Two: the 26x polarization shrink on the open solver.** You had left this
 open. It is now measured: keeping it costs a memory window about 3.3 to 4.0 times
 smaller than the commercial solver's, consistently, across the thickness range.
 Both solvers agree on direction. See section 3c.
 
-**Three, smaller — the curve reader returning a threshold from outside the
+**Three, smaller: the curve reader returning a threshold from outside the
 sweep** (section 4). One device in eight. Worth a guard, and re-running the
 baselines after.
 
-**Four, smaller — you can afford many more solver calls than you thought.** The
+**Four, smaller: you can afford many more solver calls than you thought.** The
 cost model behind "45 calls" was wrong by about seven times. The whole run took
 43 minutes.
 

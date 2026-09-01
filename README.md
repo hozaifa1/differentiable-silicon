@@ -51,14 +51,6 @@ Descending that gradient took balanced cross-entropy from **1.3996 to 1.0177** a
 window (the voltage gap between the two remembered states) from **0.415 to 0.576 V**, and paid for
 it in switching sharpness, **71 to 97 mV/dec**.
 
-[![The device moving along the descent: hysteresis loops opening, memory window traded against subthreshold slope, and the paths of the four fabrication knobs](docs/figures/fig3_hysteresis_descent.png)](docs/figures/fig3_hysteresis_descent.png)
-
-*That descent, in the device. (a) is the current through the transistor as the gate voltage is
-swept up and back down: the gap between the two branches is the memory, and it opens as the
-optimiser works. (b) is the trade being made, window bought with slope. (c) is where the four
-fabrication knobs actually went. Every curve is a design point DEVSIM really solved, read back
-from `results/cache/devsim/`, with nothing interpolated between steps.*
-
 ## The chain the gradient crosses
 
 ```
@@ -80,14 +72,6 @@ switching sharpness, on and off conductance, and so on). `H` is the transducer, 
 circuit model that converts those device numbers into the five parameters a neuron needs. `F` is
 the classifier, and `L` is its loss. An **adjoint** is the reverse-mode derivative that lets you
 run that chain backwards; a closed binary has none, which is what T3 exists to supply.
-
-[![The manufactured Jacobian as a heatmap, and a plot of how quickly the free Broyden patch goes stale](docs/figures/fig5_jacobian_and_decay.png)](docs/figures/fig5_jacobian_and_decay.png)
-
-*The manufactured derivative, made visible. (a) is the Jacobian at the flagship's starting corner,
-built from 2D+1 = 9 central-difference probes of DEVSIM and served from cache. (b) is what the
-free Broyden patch is worth as the optimiser walks away from that anchor: the cosine against the
-true Jacobian falls to 0.43 by the fifth step, then climbs back once the trust-region steps
-shrink. The patch goes stale with distance travelled, not with the number of steps taken.*
 
 ## The four Tesseracts
 
@@ -294,43 +278,7 @@ uv run python scripts/make_manifest.py --check
 - [`docs/UPSTREAM.md`](docs/UPSTREAM.md): two bugs found by using the toolkit rather
   than reading it, with the motivating case in this repository.
 
-## Figures
-
-Figure 3 is above, in [What this does](#what-this-does), and figure 5 in [The chain the gradient
-crosses](#the-chain-the-gradient-crosses). The remaining three are here. Click any figure for the
-full-resolution version; each one also has a vector PDF beside it in `docs/figures/`.
-
-### Figure 1: what a device can actually hand the network
-
-[![Principal-component view of 192 reachable devices, showing the free optimum sitting far off the manifold](docs/figures/fig1_pca_manifold.png)](docs/figures/fig1_pca_manifold.png)
-
-*Two principal directions carry **90.5%** of the variation across 192 devices, so four fabrication
-knobs buy roughly two dimensions of neuron behaviour. The freely optimised phi\* sits **13.5**
-typical device-spacings off that sheet: it scores well, and no device can be built to sit there.
-Panel (c) says why. It wants a ferroelectric memory whose two states conduct almost alike, and a
-memory whose two states conduct alike is not a memory.*
-
-### Figure 2: does the gradient pay for itself
-
-[![Best loss found against solver calls allowed, for five search strategies, with a zoomed panel showing the crossings](docs/figures/fig2_budget_crossover.png)](docs/figures/fig2_budget_crossover.png)
-
-*Sample efficiency against solver calls, which is the only cost that matters when each call is a
-solver run. The anchor Jacobian costs 2D+1 = 9 calls before the first step is even taken, so at a
-12-call budget this project comes fourth of five. It overtakes Latin hypercube between 20 and 32
-calls, random search between 32 and 48, and Bayesian optimisation between 48 and 64. Gradient
-descent is the only arm that keeps converting extra budget into performance; random search is flat
-to six decimal places from 12 calls to 48.*
-
-### Figure 4: what the better device does to the classifier
-
-[![Spike raster before and after, per-beat predictions for a batch of 16, and per-class accuracy](docs/figures/fig4_spike_raster.png)](docs/figures/fig4_spike_raster.png)
-
-*Same weights, same 16 beats, same seed. The only thing that changed is the five numbers the device
-hands up. The layer does **not** fire more (rate 0.4344 → 0.4572, per-neuron correlation 0.9999):
-**one spike in eleven moves**, and that is enough to unstick a readout that had been answering one
-class for all sixteen beats. Nothing was retrained in between.*
-
-### The descent as footage
+## The descent as footage
 
 [![Animated version of the hysteresis descent](docs/figures/anim_descent.gif)](docs/figures/anim_descent.gif)
 

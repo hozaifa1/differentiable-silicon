@@ -2,7 +2,7 @@
 
 **Backpropagating a class-balanced ECG-classification loss through a spiking
 network, through a subthreshold neuron circuit, and into a closed-source
-commercial TCAD solver — to obtain ∂L/∂(ferroelectric process parameters).**
+commercial TCAD solver, to obtain ∂L/∂(ferroelectric process parameters).**
 
 Tesseract Hackathon 2026 · Track 3 — Hybrid ML + Mechanistic Models
 Repository: <https://github.com/hozaifa1/differentiable-silicon> (Apache-2.0)
@@ -16,9 +16,9 @@ synapses are made from. That dependence is normally broken by hand: a device
 engineer maximises a figure of merit, hands the numbers over, and an ML engineer
 trains on whatever arrives. This project closes the loop. It backpropagates a
 class-balanced cross-entropy over MIT-BIH ECG beats, through a PyTorch spiking
-network, through a JAX subthreshold-DPI transducer, and into **Synopsys Sentaurus
-— a closed-source binary with no adjoint, driven over SSH from a CentOS 7 host
-with Python 2.7 and nothing else on it** — and returns a usable gradient with
+network, through a JAX subthreshold-DPI transducer, and into **Synopsys Sentaurus**
+(a closed-source binary with no adjoint, driven over SSH from a CentOS 7 host
+with Python 2.7 and nothing else on it) and returns a usable gradient with
 respect to four *fabrication* parameters of a GAA ferroelectric FET. The
 optimiser then descends it and finds a better device.
 
@@ -46,7 +46,7 @@ closed binary:
         L (class-balanced cross-entropy)
 ```
 
-Four Tesseracts, and the boundary between them is a real one — not two JAX
+Four Tesseracts, and the boundary between them is a real one, not two JAX
 functions in one script:
 
 | | Tesseract | wraps | AD | endpoints |
@@ -57,8 +57,8 @@ functions in one script:
 | **T4** | `snn-lif-ecg` | the thesis LSNN (100 LIF + 60 adaptive, delayed synapses) on 2000 MIT-BIH beats | PyTorch | + **`vjp`**, `jvp` |
 
 **T1 and T2 publish a byte-identical frozen schema.** Swapping the closed-source
-commercial solver for the Apache-2.0 one is one environment variable —
-`ORACLE_BACKEND` — and a test asserts the schemas still match. Nothing downstream
+commercial solver for the Apache-2.0 one is one environment variable
+(`ORACLE_BACKEND`), and a test asserts the schemas still match. Nothing downstream
 can tell them apart except by reading the `backend` string that comes back. That
 is a fact about the code, not a claim in a README, and it is the reason this is
 built on Tesseract at all.

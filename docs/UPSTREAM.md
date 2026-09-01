@@ -96,13 +96,13 @@ end, where a step larger than the value it perturbs replaces that value instead.
 | `g_max` | 2.0e-4 |
 
 No single `eps` is right for both `th_th` at 5.0 and `g_min` at 2.6e-5. An `eps`
-of 1e-4 is four times `g_min` itself — not a perturbation of it but a replacement
-of it — while the same step is negligible against `th_th`.
+of 1e-4 is four times `g_min` itself, so it replaces the value it is meant to
+perturb, while the same step is negligible against `th_th`.
 
 This project's device parameters have the same problem in the raw: `t_fe` in
 nanometres alongside `N_ch` in cm^-3, eighteen orders apart. The frozen contract
 sidesteps it by normalising `theta` to `[0,1]^D`, which is a real design decision
-and also the reason a single scalar `alpha` works in `shim/adjoint.py` — but not
+and also the reason a single scalar `alpha` works in `shim/adjoint.py`. Not
 every caller can normalise, and the helper should not require it.
 
 ### Proposal

@@ -25,7 +25,7 @@ extracted by the frozen `shared.extract` on the frozen 96-point grid:
 
 MW = 0.394 V, four times the gate. The fallback branch (b) was not needed: the
 ferroelectric is meshed and solved, not bolted on. **Wall clock 36–40 s per design
-point**, against 306 s for one Sentaurus run — which is what makes DEVSIM the
+point**, against 306 s for one Sentaurus run, which is what makes DEVSIM the
 solver the D3 validation suite runs on.
 
 The five transduced hyperparameters all land inside the healthy ranges
@@ -49,8 +49,8 @@ JAP 72, 5999 (1992); QS-Devsim is not used and not vendored (non-commercial lice
 + patent CN 113297818 B, both incompatible with Apache-2.0).
 
 The branch sign falls out rather than being imposed: the up-sweep branch passes
-through `P = −ηPr` at `E = 0`, the bound charge repels electrons, V_th is high —
-the erased state. `MW = vth_fwd − vth_rev > 0`, exactly the D1 convention.
+through `P = −ηPr` at `E = 0`, the bound charge repels electrons and V_th is
+high, which is the erased state. `MW = vth_fwd − vth_rev > 0`, exactly the D1 convention.
 
 ### Three constants are chosen rather than solved
 
@@ -83,7 +83,7 @@ junction depletion region is ~36 nm wide and they meet under a 40 nm gate.
 
 Fixed by going to an **8 nm ultra-thin body** on an ideal insulating substrate
 (the film's bottom face carries no contact and no interface, which is DEVSIM's
-natural zero-flux condition — a thick buried oxide with no back gate). Electrostatic
+natural zero-flux condition: a thick buried oxide with no back gate). Electrostatic
 integrity then comes from T_SI rather than from doping, and the device is
 well-behaved across the whole box including L_g = 20 nm. It is also the right
 device: FeFETs of this class are demonstrated on fully-depleted films, and a 2-D
@@ -100,7 +100,7 @@ measured 106 iterations to move it from 1e-2 to 1.3e-4 while Potential was alrea
 at 1e-8 and the electron residual at 7e-7.
 
 Every ampere of I_d is electrons. Holes are now an equilibrium node model
-`p = n_i exp(−ψ/V_t)` — the textbook unipolar MOSFET approximation. The stiff mode
+`p = n_i exp(−ψ/V_t)`, the textbook unipolar MOSFET approximation. The stiff mode
 is gone, the system is two equations instead of three, and the DC solution stops
 being path-dependent, which matters because this oracle is about to be
 finite-differenced.
@@ -134,7 +134,7 @@ solver budget descending a surface with no slope in it, and the run would have
 looked like a gradient-quality problem rather than a missing training loop.
 
 T4 now trains W to approximate stationarity under the φ it is handed, and reports
-the loss there — which is the question the project is actually asking: *given a
+the loss there, which is the question the project is actually asking: *given a
 device, how well can a network built on it do*. The VJP still holds W fixed, and
 that is legitimate rather than lazy: with `L(φ) = L(φ; W*(φ))`,
 
@@ -161,7 +161,7 @@ solver can afford at 36 s a point. Live output in
 leaves everything it learned.
 
 **It runs on DEVSIM, not Sentaurus.** No credential was reachable in this session, and
-that is a blocker rather than an inconvenience — see the open items above.
+that is a blocker rather than an inconvenience. See the open items above.
 
 Both start from `theta0 = (0.20, 0.40, 0.30, …)`, a deliberately poor corner, and that
 is an experimental-design decision worth stating: the nominal FeFET already solves this
@@ -176,7 +176,7 @@ Two bugs in the loop itself, both worth remembering because both look like physi
   steps having spent six of its forty-five solver calls. There is now a floor, and
   below it the loop refreshes J from the solver instead of shrinking further.
 * **On the floor, it cycles.** Same theta, same J, same direction, same rejected point,
-  forever — ten identical steps in one smoke run. Two strikes at the floor now ends the
+  forever: ten identical steps in one smoke run. Two strikes at the floor now ends the
   descent, which is what a second rejection there actually means.
 
 And one that was quietly inflating the budget: `content_hash` hashes the *inputs*, so the
@@ -208,10 +208,10 @@ drift-diffusion solve at the design point it is attributed to, and
 `results/runs/provenance.jsonl` says so per call.
 
 The physics is coherent and it was not put there by hand: the optimiser widened the
-memory window, dropped the leakage by 31× (which is what took β from 0.089 — a membrane
-that forgets everything in one timestep — to 0.928), opened the conductance ratio from
+memory window, dropped the leakage by 31× (which is what took β from 0.089, a
+membrane that forgets everything in one timestep, to 0.928), opened the conductance ratio from
 5 to 79, and halved the weight noise. It got there almost entirely through `Pr` and
-`t_fe` and **left `Ec` essentially alone** — which is the same conclusion the
+`t_fe` and **left `Ec` essentially alone**, which is the same conclusion the
 cross-check below reaches by a completely independent route.
 
 ### Result — d=5, DEVSIM: the same win bought a different way, and then a stall
@@ -237,17 +237,17 @@ Given a gate length, the optimiser spent almost nothing on the ferroelectric: it
 lengthened the channel, which sharpened the subthreshold slope by 11 mV/dec, which cut
 the leakage by 11×, which is what the membrane time constant actually cares about.
 Denied that knob at d=3, it bought the same β by widening the memory window instead.
-Two routes to one objective, selected by which knobs exist — which is the thing d=5 was
+Two routes to one objective, selected by which knobs exist, which is the thing d=5 was
 put in the design vector to expose.
 
 **But d=5 did worse with more freedom, and that is the finding.** ρ over its eleven
-steps was +2.70, +0.63, −0.44, +0.02, +0.02, −0.79, +0.81, −6.75, −4.22, −1.71, −4.56 —
+steps was +2.70, +0.63, −0.44, +0.02, +0.02, −0.79, +0.81, −6.75, −4.22, −1.71, −4.56:
 positive on 45% of steps, and the last four are wild. A local model that mispredicts by
 a factor of five in both directions is not describing the solver, and the run spent its
 last four steps and 24 solver calls confirming that before the stall break fired.
 
 There is a specific and checkable suspect. **`L_g` is the one d=5 parameter that moves
-the mesh** — T2 regenerates the grid per design point, so a finite difference in `L_g`
+the mesh**: T2 regenerates the grid per design point, so a finite difference in `L_g`
 differences two different discretisations, which is exactly the deterministic
 non-smoothness V1 exists to measure and the reason V1 is not a repeatability test. The
 optimiser leaned hardest on `L_g` and then stalled. **Look at the `L_g` column first on
@@ -271,11 +271,11 @@ differential capacitance sits in series with the body and moves the subthreshold
 Comparing a sign against numerical noise is not a comparison.
 
 **2. `dg/dV_th` disagrees on all three columns, and this one is real.** Mock
-(+0.147, +0.130, +0.174) against DEVSIM (−0.907, −0.662, −0.076) — neither side is near
+(+0.147, +0.130, +0.174) against DEVSIM (−0.907, −0.662, −0.076): neither side is near
 zero, so it is a genuine systematic flip. The cause is the mock's above-threshold
 branch: it is a log-linear soft-min with `GAMMA_ON = 1.6 dec/V`, i.e. **exponential**
 above threshold, so its transconductance keeps growing as the reverse branch is driven
-further on. A real MOSFET's does not — it rolls off. At `V_read = 0.60 V` the
+further on. A real MOSFET's does not; it rolls off. At `V_read = 0.60 V` the
 programmed branch is well above threshold, which is exactly where the two models part
 company.
 
@@ -289,7 +289,7 @@ are real solvers. The mock is the Tier A oracle, not a party to V4.
 **3. The rank-order disagreement is one mechanism difference, stated three times.** In
 DEVSIM the `Ec` column is roughly 10× weaker than `t_fe` and `Pr`; in the mock it is
 first-order. The mock sets `MW ∝ Ec · t_fe · tanh(Pr/15)`. T2's window is set by
-`2·η·Pr·t_fe / eps_eff`, and `Ec` enters only through `eps_eff` — weakly, and with the
+`2·η·Pr·t_fe / eps_eff`, and `Ec` enters only through `eps_eff`, weakly and with the
 opposite curvature. Both are defensible readings of a ferroelectric gate; they are not
 the same reading. The mini-flagship independently agreed with T2's version by barely
 moving `Ec` over 45 solver calls.
@@ -300,7 +300,7 @@ moving `Ec` over 45 solver calls.
 
 ### The synthetic task is too easy, and it is the next bottleneck
 
-With W trained, accuracy is **1.000 at almost every device in the box** — at batch
+With W trained, accuracy is **1.000 at almost every device in the box**, at batch
 32 and at batch 256 alike. Only a film thin enough to collapse the memory window
 (`t_fe ≲ 5.3 nm`) degrades it. The landscape is close to binary: the device either
 works or is dead, with little slope in between, which is a hard surface for any
@@ -323,7 +323,7 @@ to be quoted as evidence anywhere.
 At the nominal point, `g·u` from the shim is ~0.21 against a central-difference
 directional derivative of ~6.3 in the same direction. The **sign** agreed; the
 magnitude did not. Over four random directions at α = 0.02 the model/truth ratios
-were 0.016, −0.006, −0.104, 0.037 — essentially uncorrelated at that step size.
+were 0.016, −0.006, −0.104, 0.037: essentially uncorrelated at that step size.
 
 This is exactly what V1 (the α selection curve) and V2 (cosine vs steps-since-
 refresh) exist to settle, and both are D3 items. Two things make it survivable in
@@ -343,7 +343,7 @@ installed version's Device manual before the flagship. The host itself is reacha
 Three driver changes went in alongside it:
 
 * **`-hostkey` is now passed to plink and pscp.** `plink -batch` refuses to connect
-  to a host whose key it has not cached, and this machine has cached nothing — so
+  to a host whose key it has not cached, and this machine has cached nothing, so
   the fingerprint measured on D1 is carried in `T1Config` and is overridable.
 * **The frozen defaults are filled for every design vector.** A d=3 point still has
   an L_g and an N_ch, and they are the same numbers T2 uses. Without this a deck
@@ -363,6 +363,6 @@ eps_eff = eps_bg / k          Ec_eff = Ec * k          Ps, Pr unchanged
 ```
 
 The two scales are **reciprocals**; the first draft used one for both, which
-preserves nothing. The check that catches it is `Ec_eff · t_slab == Ec · t_fe` —
+preserves nothing. The check that catches it is `Ec_eff · t_slab == Ec · t_fe`:
 the coercive *voltage* across the layer is what sets the memory window, and it is
 now preserved exactly.

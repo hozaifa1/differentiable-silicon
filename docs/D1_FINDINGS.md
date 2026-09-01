@@ -64,8 +64,8 @@ the G4 metric halves exactly under grid refinement (40 → 80 → 160 points giv
 A real Id–Vg curve leaves the log-linear regime about 4.4 decades above 1e-10 A,
 and at σ = 1.0 the Gaussian tail reaches into that knee and biases the slope.
 Narrowing to 0.6 took worst-case SS error from **0.28 % → 0.016 %**, V_th from
-**0.68 mV → 0.05 mV**, and `I_leak` — which amplifies the SS error over however
-many decades separate `V_leak` from the window — from **1.72 % → 0.15 %**.
+**0.68 mV → 0.05 mV**, and `I_leak` (which amplifies the SS error over however
+many decades separate `V_leak` from the window) from **1.72 % → 0.15 %**.
 
 ### 3. The sweep grid is [−1.2, 1.4] V
 
@@ -90,7 +90,7 @@ Following the spec's transducer arithmetic gives, at the nominal device,
 `th_th = C_mem·V_spk/(g_max·V_ds·dt_hw) = 2.7e-4`. Spikes-to-fire cannot be 2.7e-4.
 
 Working back: the DPI integrator needs `C_mem·V_spk/(th_th·dt_hw)` of synaptic
-current, which at a sane `th_th` is a few nanoamps — a synapse conductance around
+current, which at a sane `th_th` is a few nanoamps: a synapse conductance around
 1e-8 S. A real 40 nm FeFET read at V_read = 0.60 V, V_ds = 50 mV delivers ~2e-4 S.
 The gap is ~1.8e4 and it is not a modelling error: it is why analog neuromorphic
 synapse arrays **attenuate** the read current into the integrator rather than
@@ -99,7 +99,7 @@ driving it directly.
 `K_syn` is that fixed attenuation, one named design constant in
 `config/circuit.yaml`, frozen today at **5.450675e-05**. It multiplies `g_min`,
 `g_max` and `dg/dV_th` identically, so `sigma_w` is invariant to it and `beta`
-does not involve it at all — it sets the firing threshold and nothing else. Both
+does not involve it at all: it sets the firing threshold and nothing else. Both
 invariances are asserted in `test_k_syn_does_not_touch_sigma_w`.
 
 ### 6. `th_th` is 5, not 20 — the first choice produced a silent, dead network
@@ -108,7 +108,7 @@ invariances are asserted in `test_k_syn_does_not_touch_sigma_w`.
 over `1/(1−beta) = 2.5` steps, so it can reach at most about
 `2.5 × fan-in × input-rate × mean-weight`. At `th_th = 20` **no neuron in the
 network ever fired**: every logit was identically zero, the loss sat at exactly
-ln 4 for every θ in the box — and `jax.grad` still returned smooth, plausible,
+ln 4 for every θ in the box, and `jax.grad` still returned smooth, plausible,
 entirely meaningless numbers, because a surrogate gradient does not care whether
 a spike happened.
 
@@ -122,11 +122,11 @@ survived every numerical check in the suite. Two tests now catch it directly:
 Calibrated against a real 40 nm nMOS in the linear region
 (`Id = μ_eff C_ox (W/L) V_ds (V_ov − V_ds/2)`, μ_eff = 200 cm²/Vs, EOT = 1 nm),
 which gives ~10 µA at W = 100 nm, V_ov = 0.49 V, V_ds = 50 mV, i.e. g ≈ 2e-4 S.
-The first draft produced 3.7e-2 S — 37 mS for a 100 nm device — and it silently
+The first draft produced 3.7e-2 S (37 mS for a 100 nm device) and it silently
 poisoned every downstream circuit number including the one above.
 
 The mock's soft-min temperature is also now `2/ln 10` decades, which makes the
-knee exactly `2 n U_T` wide in gate voltage — the same width the standard EKV
+knee exactly `2 n U_T` wide in gate voltage, the same width the standard EKV
 interpolation produces. The first draft's sharper knee was a mock artefact that
 punished the conductance fit for something no real device does.
 
@@ -157,7 +157,7 @@ crossing into JAX must be an array, and `tesseract_jax.apply_tesseract` raises
 `TypeError: string indices must be integers` on anything else (see
 [UPSTREAM.md](UPSTREAM.md)). Both are now written per call to the cache record and
 to `results/runs/provenance.jsonl`. An append-only on-disk log is better evidence
-than a return field anyway — it is what answers *"was the forward pass ever a
+than a return field anyway: it is what answers *"was the forward pass ever a
 surrogate"*, and a return value could not.
 
 ### 11. `dL/dg_min` and `dL/dg_max` are ~1e-13, and that is correct
@@ -185,13 +185,13 @@ Fatal Python error: Aborted
 
 No traceback, no exception to catch. The documented escape hatch
 `KMP_DUPLICATE_LIB_OK=TRUE` is explicitly "unsafe, unsupported, undocumented" and
-Intel warns it can silently produce incorrect results — the last thing a solver in
+Intel warns it can silently produce incorrect results: the last thing a solver in
 a gradient path should do.
 
 **Consequence for D2:** the DEVSIM oracle must run out of process from the network.
-It already does — T2 is a served Tesseract in its own container and T4 is another —
-so this is the process boundary earning its keep rather than being decorative, and
-it is worth a sentence in the writeup. But it means the D2 DEVSIM work cannot be
+It already does: T2 is a served Tesseract in its own container and T4 is another,
+so the process boundary already exists rather than being added just for this. That
+belongs in the writeup. But it means the D2 DEVSIM work cannot be
 debugged in a session that has imported torch.
 
 ### The Windows DEVSIM wheel ships no BLAS
@@ -206,7 +206,7 @@ path and sets `DEVSIM_MATH_LIBS`. `mkl` is now a Windows-only dependency of the
 
 Aliasing (`InputSchema = OracleInput`) generates an OpenAPI component named
 `OracleInput`, and `tesseract_jax` looks up `Apply_InputSchema` by name and fails
-with `KeyError`. The frozen contract is therefore *subclassed*, not aliased —
+with `KeyError`. The frozen contract is therefore *subclassed*, not aliased:
 same fields, right component name.
 
 ---

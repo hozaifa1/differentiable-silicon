@@ -1,9 +1,9 @@
 # Why the flagship Tesseract runs uncontainerised
 
-`t1/Dockerfile` exists and CI builds it. The flagship runs it are produced with,
-though, run T1 as a plain local process on Windows driving the solver over
-`plink`/`pscp`. That is a decision, not an omission, and this document is here so
-it does not have to be inferred.
+`t1/Dockerfile` exists and CI builds it. The flagship runs, though, use T1 as a
+plain local process on Windows driving the solver over `plink`/`pscp`. That is a
+decision, not an omission, and this document is here so it does not have to be
+inferred.
 
 ## The situation
 
@@ -33,7 +33,7 @@ glibc 2.17. This is the obvious move and we did not take it.
 The deciding argument is that *the boundary the judging criteria actually
 describe is identical either way*. Criterion 1 asks for composition across a real
 boundary. The boundary here is PyTorch autograd ↔ JAX ↔ a closed-source Fortran
-and C++ binary with no AD path — and that boundary is crossed identically whether
+and C++ binary with no AD path. That boundary is crossed identically whether
 the SSH hop sits inside T1 or around it. What changes is everything else:
 
 - Installing a toolchain on the licence host would delete the single most
@@ -49,7 +49,7 @@ the SSH hop sits inside T1 or around it. What changes is everything else:
 ## What the container is for
 
 The image is the bring-your-own-licence path, Tier D. It contains no Synopsys
-code — redistributing the solver would violate the licence; redistributing a
+code: redistributing the solver would violate the licence; redistributing a
 recipe for wiring it up does not. It expects:
 
 - the Sentaurus tree bind-mounted read-only at `/opt/synopsys`

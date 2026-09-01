@@ -25,8 +25,8 @@ Three things were open for D6. All three are closed. Two of them turned up
 something the day was not looking for, and both of those are worth more than the
 task that found them.
 
-1. **Tier C is verified rather than asserted.** Every banked Sentaurus number —
-   164 float64 values — regenerates **bit-identically** from
+1. **Tier C is verified rather than asserted.** Every banked Sentaurus number,
+   all 164 float64 values, regenerates **bit-identically** from
    `results/cache/sentaurus/`, in 1.4 seconds, in a process that cannot open a
    socket or spawn a subprocess. See §1.
 2. **Figures 3 and 4 are drawn**, both with zero solver calls. Figure 3 is the
@@ -38,22 +38,22 @@ task that found them.
 
 **A reproduction bug, found by checking that a figure matched its own flagship.**
 Every banked result in this project was produced under `SNN_TRAIN_MODE=frozen`.
-The module defaults to `adapt`, and `run_flagship` set neither — so the command
+The module defaults to `adapt`, and `run_flagship` set neither, so the command
 the README gives returned **1.3152** where the flagship reports **1.3996**, and
 nothing on disk said which was which. Fixed at the source and verified. See §2.
 
 **The T1 structural-zero count in the notes is wrong, and wrong in the direction
 that misleads.** It says three of four Jacobian columns are identically zero.
-Measured against the cache: **two are, and the third is spuriously non-zero** —
-it moves the threshold without the solver returning a different device. See §6.
+Measured against the cache: **two are, and the third is spuriously non-zero**. It
+moves the threshold without the solver returning a different device. See §6.
 
 **A crashing solver could kill a whole flagship run, and now cannot.**
 `fd_jacobian` salvaged a probe the extraction refused but not a probe whose
-solver process died — the second escaped as a bare `RuntimeError`. The V2 run hit
+solver process died. The second escaped as a bare `RuntimeError`. The V2 run hit
 exactly that and lost 25 minutes of solver time. Fixed; the re-run then salvaged
 two crashed probes and completed. See §7.
 
-**Everything is committed**, working tree clean. Not pushed — see §8.
+**Everything is committed**, working tree clean. Not pushed; see §8.
 
 ---
 
@@ -86,7 +86,7 @@ at the top of `main`, not at import. `ssl` subclasses `socket.socket` and
 first takes `import jax` down with it with a `TypeError` that names neither.
 
 If any number below had come from the solver, the script does not produce a wrong
-answer — it dies with a traceback.
+answer. It dies with a traceback.
 
 ### The result
 
@@ -138,7 +138,7 @@ seven numbers that are not.** `vth_fwd`, `vth_rev`, `i_leak`, `g_lo` and
 `dg_dvth` all move between extraction generations while the solver output does
 not. That is `cache_key`'s `_extraction_source_hash` justified by evidence
 instead of by its own docstring: an edit to `extract.py` really does change what a
-stored record *means*, on every backend — including the one whose curves are
+stored record *means*, on every backend, including the one whose curves are
 expensive enough that nobody would think to recompute them. Without that hash the
 old seven numbers would be served off the right curve indefinitely, with the
 provenance log cheerfully recording that a real solver had produced them.
@@ -165,12 +165,12 @@ A figure that disagrees with the run it illustrates is not a drawing problem.
 
 `tesseracts/snn-lif-ecg/tesseract_api.py` reads `SNN_TRAIN_MODE` at import and
 defaults to **`adapt`**. Every driver that produced a reported number sets
-**`frozen`** for itself — `race_d4.py`, `race_sweep_d5.py`, `v6_free_refit_d5.py`,
+**`frozen`** for itself: `race_d4.py`, `race_sweep_d5.py`, `v6_free_refit_d5.py`,
 `h_ablation_d5.py`, `smoke_tesseracts.py`, `v6_manifold_control.py`. Two things
 did not: `src/diffsilicon/optimise.py` and `scripts/run_flagship.py`.
 
-So the flagship's own numbers were produced under `frozen` — from a shell that
-happened to have the variable set — and the command in the README ran under
+So the flagship's own numbers were produced under `frozen`, from a shell that
+happened to have the variable set, and the command in the README ran under
 `adapt`. `result.json` did not record the mode either, so nothing on disk
 distinguished the two runs. Under `frozen` every number matches to nine decimals.
 
@@ -178,7 +178,7 @@ distinguished the two runs. Under `frozen` every number matches to nine decimals
 
 `FlagshipConfig` gains `train_mode`, defaulting to `frozen`. `run_flagship` sets
 `os.environ["SNN_TRAIN_MODE"]` **before** the Tesseract that reads it is
-constructed — the ordering is load-bearing and is commented as such — and the
+constructed (the ordering is load-bearing and is commented as such), and the
 value is serialised into `result.json` with the rest of the config.
 `scripts/run_flagship.py` gains `--train-mode`.
 
@@ -196,9 +196,9 @@ Banked at `results/runs/d6-trainmode-check/`.
 
 ### And `frozen` is right on the merits, not merely conventional
 
-It is worth stating positively rather than as a bug fix. `frozen` is what the
-thesis does — train in software, deploy onto measured FeFET levels — and it makes
-the VJP **exact rather than approximate**: the envelope-theorem argument for
+`frozen` is what the thesis does (train in software, deploy onto measured FeFET
+levels), and it makes the VJP **exact rather than approximate**: the
+envelope-theorem argument for
 holding `W` fixed while differentiating `L(phi; W*(phi))` needs a stationary
 `W*`, and a `W` that never moves is trivially stationary.
 
@@ -216,8 +216,8 @@ does, and it is what makes the project legible to somebody who reads transistors
 rather than optimisers.
 
 **(a) The loop opens.** The Id-Vg double sweep at each of the nine distinct
-points the descent stood on — forward branch (erased, high V_th) and reverse
-(programmed, low V_th) — coloured by solver calls spent. The gap between them at
+points the descent stood on, forward branch (erased, high V_th) and reverse
+(programmed, low V_th), coloured by solver calls spent. The gap between them at
 the constant-current criterion is the memory window, and it widens **0.415 V →
 0.576 V**. The threshold marker is drawn per curve rather than as one line,
 because `I_crit = 100 nA · W/L_g` moves when the optimiser moves the gate.
@@ -225,7 +225,7 @@ because `I_crit = 100 nA · W/L_g` moves when the optimiser moves the gate.
 **(b) Slope traded for window, on purpose.** Memory window against subthreshold
 slope, step by step. They rise together: SS degrades **71.1 → 97.4 mV/dec**. To
 anyone who designs transistors for switching that reads as a defect. It is the
-correct trade here — a thicker HZO film and a thinner interlayer buy window at the
+correct trade here: a thicker HZO film and a thinner interlayer buy window at the
 cost of electrostatic control, and the network needs window, because window is
 what separates the two conductance states the synapse stores. The optimiser found
 that without being told the trade existed. It is the same trade the V7 ablation
@@ -286,7 +286,7 @@ So the claim is not "the network improved". It is: *moving one spike in eleven i
 what separates a readout stuck on a single output from a working one.* That is
 sharper, and it is what the numbers say.
 
-Panel (c) is per-class accuracy — 0/0/0/1.00 for start against 1.00/1.00/0.50/0.25
+Panel (c) is per-class accuracy: 0/0/0/1.00 for start against 1.00/1.00/0.50/0.25
 for final. The three zero bars are labelled, because a bar of height zero is
 invisible and here the zero *is* the finding.
 
@@ -317,8 +317,8 @@ D6 audit, and `results/runs/provenance_audit_d6.json` is always authoritative.
 | mock | 223 | 119 | 0.02 h |
 | sentaurus | 39 | 16 | 2.26 h |
 
-The unconverged evaluations are logged rather than dropped — refused by the
-extraction, not silently used.
+The unconverged evaluations are logged rather than dropped. The extraction
+refused them and nothing used them silently.
 
 **Every step of the flagship is in it.** All 15 steps of `flagship-d4-fixed` have
 a provenance line at their recorded `content_hash`, a real solver wrote every one,
@@ -336,7 +336,7 @@ source; none of them is a flagship step.
 earlier docs say. The D3 rewrite of `shared/extract.py` re-keyed every cache entry,
 and the log was restarted with the cache it describes rather than left to mix two
 incompatible generations of the same field names. **The writeup must not say
-"appending since D1"** — it is wrong and it is checkable in thirty seconds.
+"appending since D1"**. It is wrong and it is checkable in thirty seconds.
 
 ---
 
@@ -358,7 +358,7 @@ zero. Measured at the cross-check design point, that is not what is on disk:
 
 **Two columns are identically zero. The third is worse than zero.** The solver
 returns exactly the same current at every gate voltage whether `L_g` is 38.4 nm or
-41.6 nm — and the threshold still moves, because the constant-current criterion is
+41.6 nm, and the threshold still moves, because the constant-current criterion is
 `I_crit = 100 nA · W/L_g`, so shrinking the gate raises the bar the same curve has
 to cross and reads out a different V_th.
 
@@ -380,7 +380,7 @@ rather than something inferred from a `.cmd` file nobody can ship.
 
 `ShimConfig.refresh_every` is 4, and the comment beside it says "K; the V2 cosine
 curve revises it on D3, not asserted". That is the right thing to say, and until
-today nothing on disk backed it — the curve was measured on D2/D3 and never
+today nothing on disk backed it. The curve was measured on D2/D3 and never
 banked. A repository that asserts a constant and cites a measurement nobody can
 see is one question away from an awkward answer.
 
@@ -419,7 +419,7 @@ today on DEVSIM; 3.8 minutes.
 free step the composed gradient still points 0.70 of the way toward the truth,
 which is above the ~0.7 a line search needs. At the fifth it is 0.43. The
 constant sits exactly at the last usable step, which is what a well-chosen
-budget should look like and is not what an arbitrary one would look like.
+budget should look like.
 
 ### And the curve is not monotone, which is the more useful finding
 
@@ -430,8 +430,8 @@ is not a defect in the measurement; the explanation is in the trust region:
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | \|Δθ\| | 0.080 | 0.128 | 0.205 | 0.328 | 0.328 | 0.082 | 0.082 | 0.020 |
 
-The flagship's trust region grows to 0.33 through steps 4–5 — exactly where the
-cosine is worst — and then collapses to 0.08 and 0.02, and a rank-one patch over
+The flagship's trust region grows to 0.33 through steps 4–5, exactly where the
+cosine is worst, then collapses to 0.08 and 0.02, and a rank-one patch over
 a step that short barely has to be right to still point the right way.
 
 Over these nine points, **distance from the anchor predicts the row cosine
@@ -439,10 +439,10 @@ Over these nine points, **distance from the anchor predicts the row cosine
 (r = −0.36)**. The model goes stale with *how far you have walked*, not with
 *how many times you have stepped*.
 
-**That is a justification for the design rather than an embarrassment for it.**
-`AdjointShim.jacobian` already refreshes on either of two conditions —
+**That is a justification for the design.**
+`AdjointShim.jacobian` already refreshes on either of two conditions,
 `steps_since_refresh >= refresh_every` **or**
-`||theta − theta_anchor|| > radius` — and this measurement says the second is
+`||theta − theta_anchor|| > radius`, and this measurement says the second is
 the one carrying the load. K = 4 is a proxy for a distance budget, and it is a
 proxy that holds only while the step size holds. Both tests are needed and the
 writeup should say which one is doing the work.
@@ -460,7 +460,7 @@ There was a floating point exception of type "Invalid, Divide-by-zero"
 during LU Factorization
 ```
 
-`fd_jacobian` has salvaged a failed probe since D4 — one bad side falls back to a
+`fd_jacobian` has salvaged a failed probe since D4: one bad side falls back to a
 one-sided difference against the centre rather than losing the column. It
 salvaged exactly **one of the two ways a probe can fail**:
 
@@ -476,7 +476,7 @@ solver crash"*. A solver crash was not handled at all. On the flagship, one
 unlucky probe of nine costs the whole run and every call already paid for.
 
 Fixed: both failures now cost their own side, and they are recorded separately in
-`ctr.refused` — `extraction-refused` versus `solver-crashed` — because a device
+`ctr.refused`, as `extraction-refused` versus `solver-crashed`, because a device
 the extraction cannot read is a statement about the design box and a solver that
 died is a statement about the solver. `OracleBudgetExhausted` is re-raised
 explicitly, since it is also a `RuntimeError` and swallowing the budget cap as a
@@ -507,8 +507,8 @@ The 7×4 matrix at the flagship's starting corner, in relative units
 | high conductance | +0.90 | −1.01 | −0.91 | −0.61 |
 | conductance slope | −0.83 | −0.93 | −0.33 | −0.58 |
 
-Drawn on a **symmetric-log** colour scale, not a linear one. Two rows — leakage
-current and low conductance — respond about eleven times more strongly in
+Drawn on a **symmetric-log** colour scale, not a linear one. Two rows, leakage
+current and low conductance, respond about eleven times more strongly in
 relative terms than anything else, because both are exponential in the surface
 potential. On a linear scale those two rows saturate the colormap and every other
 entry reads as white, so the figure would say "only two things happen", which is
@@ -533,12 +533,12 @@ writing it reads:
 | `f92d834` | V2's numbers, Figure 5 drawn, and these findings |
 | `5feeba4` | the audits re-run after the salvage fix, and their artefacts |
 
-A count is deliberately not quoted in the line above: any commit that corrects
+The line above deliberately quotes no count: any commit that corrects
 the count invalidates it, which is the sort of number that is wrong in every
 document that carries it.
 
-The repository had been running out of an uncommitted working tree since D3 —
-5,886 lines of source changes and every figure and finding — on a repository that
+The repository had been running out of an uncommitted working tree since D3,
+5,886 lines of source changes and every figure and finding, on a repository that
 is public and that judges are expected to clone.
 
 **Not pushed.** Publishing is outward-facing and D9 is the task that owns it. The
@@ -555,7 +555,7 @@ commits are local and reviewable; `git push` is one command when D7 or D9 wants 
   constants.
 - **I did not draw the accuracy–energy Pareto.** `lambda_e` is 1e6 against an
   energy term of order 1e-9 × spikes, so it is inert at this scale and there is no
-  Pareto front to draw — a two-point line with both points at the same energy
+  Pareto front to draw. A two-point line with both points at the same energy
   would be a figure that implies a trade-off nobody measured.
 - **I did not delete `scripts/v6_manifold_control.py`.** It keeps its SUPERSEDED
   banner explaining the `zdelt`/`xatol` trap, and it is now committed with it. The

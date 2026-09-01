@@ -3,7 +3,7 @@
 ### Backpropagating a class-balanced ECG classification loss through a spiking network, through a subthreshold neuron circuit, and into a closed-source commercial TCAD solver — to obtain ∂L/∂(ferroelectric process parameters)
 
 **Tesseract Hackathon 2026** (Pasteur Labs & ISI) · **Track 3 — Hybrid ML + Mechanistic Models**
-**D1 = Sat 23 Aug 2026 · Submit Sun 31 Aug** (AoE deadline = 1 Sep 17:59 Dhaka — reserve, never plan)
+**D1 = Sat 23 Aug 2026 · Submit Sun 31 Aug** (AoE deadline = 1 Sep 17:59 Dhaka: reserve, never plan)
 
 Selected by gauntlet loop over competing candidates. Bar = the 2025 first-place winner
 (Multi-Agent-DPC, SOLARIS-JHU). Blind critic verdict: **this beats the bar**; the competing
@@ -13,12 +13,12 @@ composition-benchmark candidate lost to the bar.
 
 ## 0. WHY THIS WINS
 
-The 2025 first-place entry crossed **no real boundary** — JAX↔JAX, Python↔Python, containerised PDE
+The 2025 first-place entry crossed **no real boundary**: JAX↔JAX, Python↔Python, containerised PDE
 solvers. The 2026 criteria were rewritten in response: criterion #1 is now "composition across a real
 boundary," with the explicit warning that *"artificial boundaries inside a single script will score low."*
 
-This project puts a **closed-source, license-metered, csh-driven commercial semiconductor solver —
-running on a CentOS 7 machine that cannot host the training loop — inside the gradient path**, and
+This project puts a **closed-source, license-metered, csh-driven commercial semiconductor solver,
+running on a CentOS 7 machine that cannot host the training loop, inside the gradient path**, and
 produces ∂(balanced cross-entropy)/∂(HZO ferroelectric thickness). The gradient crosses three mutually
 unaware AD regimes (none / PyTorch / JAX) and one SSH hop. Every forward value is ground truth from the
 real solver; only the derivative is manufactured, by directed probes of that solver.
@@ -48,10 +48,10 @@ No other entry will have a commercial closed-source solver inside the gradient p
 
 ### Architecture decision (gauntlet-adjudicated)
 
-**T1 runs LOCALLY on Windows and drives the remote solver over plink/pscp.** Not on the Sentaurus host.
+**T1 runs LOCALLY on Windows and drives the remote solver over plink/pscp.** It does not run on the Sentaurus host.
 
 Rationale: the boundary criterion #1 actually judges (PyTorch ↔ JAX ↔ closed binary) is identical
-either way; installing Python 3.11 on the host would *delete the strongest sentence in the writeup* —
+either way; installing Python 3.11 on the host would *delete the strongest sentence in the writeup*:
 **"the solver host has Python 2.7.5 and nothing else. I installed nothing on it. Tesseract's boundary
 landed exactly where the technology ran out."** No judge can run T1 under any option; T2 is the
 reproducible artifact. Day-1 hours go to T3 instead, which is the fragile piece.
@@ -101,9 +101,9 @@ class OracleOutput(BaseModel):
     solver_seconds: Float64
 ```
 
-**The FD Jacobian is 7xD, not 132xD.** No efficiency claim is made about output dimensionality — a
-scalar loss with D design variables needs D+1 forward-difference calls and always did. The apparatus is
-justified empirically in V7, not rhetorically.
+**The FD Jacobian is 7xD, not 132xD.** No efficiency claim rides on output dimensionality: a
+scalar loss with D design variables needs D+1 forward-difference calls and always did. V7 justifies
+the apparatus empirically.
 
 ### Design vectors
 
@@ -125,7 +125,7 @@ Ship `t1/Dockerfile` that COPYs only the driver, expects the Sentaurus tree bind
 
 Threshold-crossing V_th and max-slope SS on a 96-point grid are argmax/search ops: piecewise-constant
 derivative in theta, kinking every time the crossing migrates a grid cell. **This, not Newton tolerance,
-dominates FD error.** Fixed free in pure JAX, and it lives inside the oracle so smoothing happens
+dominates FD error.** Pure JAX fixes it for free, and it lives inside the oracle so smoothing happens
 *before* differencing.
 
 Soft subthreshold window, centred on a decade, never on an index:
@@ -140,10 +140,10 @@ Weighted least squares on (V_g_k, log10 I_k):
 
 `g_lo` / `g_hi` / `dg_dvth` from a second softmax-weighted **local quadratic** fit near V_read.
 
-Every operation is a smooth reduction over the whole curve — no argmax, no branch, no interpolation
-search, no index arithmetic. Unit-tested against synthetic curves with analytically known SS and V_th,
-and against curves sampled on a deliberately coarse grid, asserting extraction error < 0.5% and,
-critically, **derivative continuity under a fine theta sweep**.
+Every operation is a smooth reduction over the whole curve: no argmax, no branch, no interpolation
+search, no index arithmetic. Unit tests run against synthetic curves with analytically known SS and
+V_th, and against curves sampled on a deliberately coarse grid, asserting extraction error < 0.5% and
+**derivative continuity under a fine theta sweep**.
 
 ---
 
@@ -155,12 +155,12 @@ is dead. **The transistor is not the membrane.**
 
 ### Circuit
 
-A **DPI (differential-pair integrator) neuron** — Bartolozzi & Indiveri, *Neural Computation*
-**19**(10):2581–2603, 2007 — with an explicit MIM integration capacitor C_mem and a leak transistor in
+A **DPI (differential-pair integrator) neuron** (Bartolozzi & Indiveri, *Neural Computation*
+**19**(10):2581–2603, 2007) with an explicit MIM integration capacitor C_mem and a leak transistor in
 subthreshold. The FeFET plays two roles:
 
-- **Role A — synapse.** The programmed FeFET conductance *is* the weight; the two hysteresis branches at V_read set [g_min, g_max]. This is where the memory window does its work.
-- **Role B — leak device.** Biased at fixed V_leak, its subthreshold current sets the DPI time constant.
+- **Role A: synapse.** The programmed FeFET conductance *is* the weight; the two hysteresis branches at V_read set [g_min, g_max]. This is where the memory window does its work.
+- **Role B: leak device.** Biased at fixed V_leak, its subthreshold current sets the DPI time constant.
 
 Standard DPI result tau = C_mem * U_T / (kappa * I_tau) with kappa = 1/n, combined with
 SS = ln(10) * n * U_T, makes U_T cancel exactly:
@@ -201,7 +201,7 @@ SS = ln(10) * n * U_T, makes U_T cancel exactly:
 I_tau is a *subthreshold* current at fixed V_leak, so a 60 mV V_th shift moves it ~5x.
 **The device-to-beta channel is strong, well-conditioned, and both of its inputs come from the solver.**
 
-At W = 100 nm, L_g = 40 nm, MW = 0.5 V: Pelgrom term 63 mV, domain term 40 mV, sig_Vth = 74 mV —
+At W = 100 nm, L_g = 40 nm, MW = 0.5 V: Pelgrom term 63 mV, domain term 40 mV, sig_Vth = 74 mV,
 realistic for a scaled FeFET. At L_g = 60 nm it falls to 61 mV. **This creates the tension that makes
 d=5 non-trivial:** shrinking L_g improves density and energy but wrecks variability through *both* terms.
 
@@ -241,7 +241,7 @@ dS/dU ~= (1 + k|U - th_th|)^-2.
 ### Building and maintaining J
 
 - **Anchor:** central differences, 2D+1 calls, h_i = alpha * (theta_i_max - theta_i_min), alpha from V1.
-- **Refresh:** **forward** differences, D+1 calls. Central only for the anchor and V2 checkpoints — halves refresh cost.
+- **Refresh:** **forward** differences, D+1 calls. Central only for the anchor and V2 checkpoints, which halves refresh cost.
 - **Broyden rank-1** between refreshes, from the free secant pair each accepted step supplies: `J <- J + (dy - J s) s^T / (s^T s)`.
 - **Trust region** on rho_k; rho < 0.25 => Delta/2 + forced refresh; hard refresh every K steps (**K chosen from the V2 curve, not asserted**).
 - **Hard budget cap.** `max_oracle_calls` in config. The run stops at the cap and reports calls used. Budget-capped optimisation is schedulable and honest; convergence-criterion optimisation is neither.
@@ -269,7 +269,7 @@ Metric: max second difference / mean first difference. Then the alpha-selection 
 g^T u from `jax.grad` vs truth [J(theta + h u) - J(theta - h u)] / 2h, where truth re-runs the entire
 stack with no gradients anywhere.
 → **Reported as a CURVE of cosine similarity vs steps-since-refresh s = 0..5, mean +/- range over
-several refresh cycles — not a pass/fail threshold.** Broyden corrects J only along s_k; the other
+several refresh cycles, not a pass/fail threshold.** Broyden corrects J only along s_k; the other
 D-1 directions stay at last refresh, and descent steps are strongly correlated so secant directions
 span a degenerate subspace. Quasi-Newton converges superlinearly *without* J_k -> J* (Dennis–Moré), so
 a fixed "cos > 0.95" would pass at s=0 and fail at s=3. The curve justifies K empirically and converts
@@ -289,9 +289,9 @@ numerics, is steering the optimisation.
 
 Closes the refutation: *"phi is five scalars, so H∘G is R^D -> R^5. Make phi five free JAX parameters,
 train once (zero solver calls) -> phi*; then invert G to hit phi* in ~25 Nelder–Mead calls. No shim, no
-Broyden, no Tesseract."* The defence — phi* found unconstrained is generically **off** the reachable
-set M = {H(G(theta)) : theta in Theta}, a curved bounded 5-manifold, and projecting onto M after the
-fact is not the constrained optimum — is worth nothing unless it is measured.
+Broyden, no Tesseract."* The defence is that phi* found unconstrained is generically **off** the reachable
+set M = {H(G(theta)) : theta in Theta}, a curved bounded 5-manifold, and that projecting onto M after
+the fact is not the constrained optimum. That defence is worth nothing unless it is measured.
 
 | Arm | Feasible? | Solver calls | Balanced CE |
 |---|---|---|---|
@@ -339,12 +339,12 @@ d=12 on DEVSIM (5 seeds, error bars) is the *scientific* claim. d=5 on Sentaurus
 | FD-every-step (no Broyden/TR) | apparatus ablation |
 
 Cost reported in **both** oracle calls **and** SNN epochs. The naive "1,800 SNN-epoch" BO figure is
-inflated ~6x — nobody retrains from scratch per candidate.
+inflated ~6x: nobody retrains from scratch per candidate.
 
 ### MIT-BIH numbers — corrected to published reality
 
 Inter-patient DS1/DS2 (de Chazal). **Primary reporting: 4-class N/S/V/F**, as most inter-patient papers
-do; Q reported separately (DS2 has ~7 Q beats — a 5-class macro-F1 is dominated by a class with
+do; Q reported separately (DS2 has ~7 Q beats, so a 5-class macro-F1 is dominated by a class with
 single-digit support).
 
 | Metric | Nominal device | Target after co-design |
@@ -359,7 +359,7 @@ single-digit support).
 
 **State explicitly:** a 2-layer LIF SNN with device non-idealities lands below published CNNs, and that
 is expected. The claim is about *improvement from co-design*, not SOTA. (The earlier 0.62–0.70 target
-had an untuned SNN beating published deep CNNs before optimisation — checkable in thirty seconds and fatal.)
+had an untuned SNN beating published deep CNNs before optimisation, checkable in thirty seconds and fatal.)
 
 ### Relation to prior work — one paragraph, no semantics
 
@@ -379,8 +379,8 @@ had an untuned SNN beating published deep CNNs before optimisation — checkable
 ## 7. REPRODUCTION WITHOUT A LICENSE — four tiers
 
 - **Tier A — 2 min, no Docker, no license.** `uv sync && uv run pytest`. Complete pipeline against an analytic mock oracle via `Tesseract.from_tesseract_api()`. Proves every wire, every schema, every gradient hop. *This is what a time-pressed judge will actually run.*
-- **Tier B — ~45 min, Docker, no license.** `docker pull ghcr.io/<user>/devsim-fefet:v1`; `tesseract serve devsim-fefet --port 8101`; `ORACLE_URL=... uv run python -m diffsilicon.race --seeds 3`. **Swapping the commercial solver for the Apache-2.0 one is ONE environment variable.** The README says so at that exact spot — that line *is* the why-Tesseract demonstration.
-- **Tier C — 3 min, regenerates every Sentaurus figure.** `oracle_backend=replay` serves a content-addressed cache of every Sentaurus call (~250 files x ~7 floats, a few hundred KB, committed to the repo). Bit-for-bit, no license, no network. **Wire the cache on D1 — it must populate as a side effect of every run, not be reconstructed at the end.**
+- **Tier B — ~45 min, Docker, no license.** `docker pull ghcr.io/<user>/devsim-fefet:v1`; `tesseract serve devsim-fefet --port 8101`; `ORACLE_URL=... uv run python -m diffsilicon.race --seeds 3`. **Swapping the commercial solver for the Apache-2.0 one is ONE environment variable.** The README says so at that exact spot; that line *is* the why-Tesseract demonstration.
+- **Tier C — 3 min, regenerates every Sentaurus figure.** `oracle_backend=replay` serves a content-addressed cache of every Sentaurus call (~250 files x ~7 floats, a few hundred KB, committed to the repo). Bit-for-bit, no license, no network. **Wire the cache on D1: it must populate as a side effect of every run, not be reconstructed at the end.**
 - **Tier D — bring your own license.** `.cmd` templates, csh driver, `@placeholder@` list, SSH config.
 
 Determinism: `uv.lock`, GHCR digests pinned by sha256, a single seed threaded to NumPy/JAX/PyTorch,
@@ -423,7 +423,7 @@ on the heavier transient workload.** Hard oracle-call caps, forward-difference r
 mini-flagship banked on D2 night.
 
 **R3 — Non-smoothness in the *extraction layer* poisons the FD Jacobian.** argmax/threshold-crossing
-derivatives are piecewise constant in theta and kink whenever a crossing migrates a grid cell — this
+derivatives are piecewise constant in theta and kink whenever a crossing migrates a grid cell; this
 dominates FD error long before Newton tolerance does. → smooth extraction (section 2), built D1,
 unit-tested for derivative continuity, living inside the oracle so smoothing precedes differencing.
 **Gate G4, D1 EOD.**
@@ -450,7 +450,7 @@ on day 2; every gate has a same-day fallback; the stretch goal is pre-cut.
 **CUT: Mosaic deal.II implementation.** `mosaic/benchmarks/problems/thermal_mesh/exclusions.py`
 excludes deal.II from every gradient experiment with a categorical *"the C++ solver ships no AD path"*
 label, and `adjoint-shim` is exactly the thing that fills that cell. It is a genuine gift to the
-maintainers and a strong Best-Engineering story — **and** building a deal.II Tesseract plus learning
+maintainers and a strong Best-Engineering story, **and** building a deal.II Tesseract plus learning
 Mosaic's harness is 1–2 days that would land on D7–D8 and endanger the flagship.
 
 **SHIP INSTEAD (zero cost, most of the value):** one paragraph in the writeup citing the
@@ -472,7 +472,7 @@ case. **Cheapest $1,000 on the board. Land it D7.**
 - **Grand ($8,000) / Second ($5,000)** — the actual target.
 - **Best Engineering / Tesseract Hack ($1,000)** — reusable `adjoint-shim`; uncontainerised license-locked deployment; hot-swappable oracle contract; the upstream `eps`-vector PR.
 - **Best Visual ($1,000)** — manifold cloud with phi* outside it; animated Id–Vg hysteresis morphing along the descent path; before/after LIF spike rasters on the same ECG beat; accuracy–energy Pareto front; cosine-vs-steps-since-refresh curve; the 7xD Jacobian heatmap.
-- **Credential:** the writeup and LinkedIn post should note the **IEEE EDS TCAD Hackathon 2026 win** — externally verifiable, and it makes the Sentaurus access and TCAD competence read as credible rather than surprising.
+- **Credential:** the writeup and LinkedIn post should note the **IEEE EDS TCAD Hackathon 2026 win**. It is externally verifiable, and it makes the Sentaurus access and TCAD competence read as credible rather than surprising.
 
 ---
 
