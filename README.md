@@ -10,6 +10,8 @@ Tesseract Hackathon 2026 (Pasteur Labs & ISI) · Track 3: Hybrid ML + Mechanisti
 
 ---
 
+[![Differentiable Silicon: backpropagating through a real chip simulator](https://img.youtube.com/vi/30kIrcowcsU/maxresdefault.jpg)](https://www.youtube.com/watch?v=30kIrcowcsU)
+
 ## What this does
 
 A spiking neural network classifies heartbeats from an ECG. A spiking network is one whose
